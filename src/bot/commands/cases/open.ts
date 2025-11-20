@@ -216,16 +216,14 @@ export default {
         // Convert Steam CDN URL to our proxy URL so Discord accepts it
         const proxiedUrl = getSteamImageProxyUrl(imageToShow);
         
-        console.log(`🖼️ Setting image for ${result.item.name}`);
-        console.log(`   Original URL: ${imageToShow}`);
-        console.log(`   Proxied URL: ${proxiedUrl}`);
-        
         if (proxiedUrl) {
-          finalEmbed.setThumbnail(proxiedUrl);
-          console.log(`   ✅ Image set via proxy`);
+          // Silently try to set image, but don't fail if it doesn't work
+          try {
+            finalEmbed.setThumbnail(proxiedUrl);
+          } catch (err) {
+            // Image failed, continue without it
+          }
         }
-      } else {
-        console.log(`⚠️ No image URL available for ${result.item.name}`);
       }
 
       await interaction.editReply({ embeds: [finalEmbed] });

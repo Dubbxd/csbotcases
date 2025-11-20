@@ -360,7 +360,7 @@ async function seedCS2Cases() {
       data: {
         caseId: chromaCase.id,
         itemDefId: itemDef.id,
-        rarity: 'RARE',
+        rarity: 'UNCOMMON',
         weight: 1.0,
       },
     });
@@ -376,7 +376,7 @@ async function seedCS2Cases() {
         data: {
           name: `${item.weapon} | ${item.skin}`,
           type: 'WEAPON' as ItemType,
-          rarity: 'UNCOMMON' as Rarity,
+          rarity: 'RARE' as Rarity,
           weapon: item.weapon,
           skin: item.skin,
           iconUrl: item.imageUrl,
@@ -405,7 +405,7 @@ async function seedCS2Cases() {
         data: {
           name: `${item.weapon} | ${item.skin}`,
           type: 'WEAPON' as ItemType,
-          rarity: 'LEGENDARY' as Rarity,
+          rarity: 'VERY_RARE' as Rarity,
           weapon: item.weapon,
           skin: item.skin,
           iconUrl: item.imageUrl,
@@ -418,7 +418,7 @@ async function seedCS2Cases() {
       data: {
         caseId: chromaCase.id,
         itemDefId: itemDef.id,
-        rarity: 'LEGENDARY',
+        rarity: 'VERY_RARE',
         weight: 1.0,
       },
     });

@@ -16,7 +16,12 @@ export function getSteamImageProxyUrl(steamUrl: string | null): string | null {
   }
 
   // Get base URL from environment (could be ngrok URL or production URL)
-  const baseUrl = env.PUBLIC_API_URL;
+  let baseUrl = env.PUBLIC_API_URL;
+  
+  // Ensure base URL has protocol
+  if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+    baseUrl = `https://${baseUrl}`;
+  }
 
   // Encode the Steam URL and return proxy URL
   const encodedUrl = encodeURIComponent(steamUrl);

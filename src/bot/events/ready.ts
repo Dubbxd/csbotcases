@@ -16,17 +16,13 @@ export default {
       status: 'online',
     });
 
-    // Update guild information and start drops
+    // Update guild information
     for (const [, guild] of client.guilds.cache) {
       await guildConfigService.updateGuildInfo(
         guild.id,
         guild.name,
         guild.ownerId
       );
-
-      // Start random drops for this guild
-      await client.dropService.startDrops(guild.id);
-      logger.info(`Started random drops for guild: ${guild.name}`);
     }
 
     logger.info('Bot is ready!');

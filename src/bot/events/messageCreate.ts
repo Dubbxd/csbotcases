@@ -114,7 +114,7 @@ export default {
           ? message.guild.channels.cache.get(config.levelUpChannelId)
           : message.channel;
 
-        if (levelUpChannel && levelUpChannel.isTextBased()) {
+        if (levelUpChannel && levelUpChannel.isTextBased() && 'send' in levelUpChannel) {
           const embed = EmbedHelper.basic(
             '🎉 Level Up!',
             `Congratulations ${message.author}! You reached **Level ${result.newLevel}**!`,

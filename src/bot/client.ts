@@ -2,7 +2,6 @@ import { Client, Collection, GatewayIntentBits, Partials } from 'discord.js';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 import logger from './utils/logger';
-import { RandomDropService } from '../core/drops/randomDropService';
 
 export interface Command {
   data: any;
@@ -12,7 +11,6 @@ export interface Command {
 
 export class ExtendedClient extends Client {
   public commands: Collection<string, Command>;
-  public dropService: RandomDropService;
 
   constructor() {
     super({
@@ -26,7 +24,6 @@ export class ExtendedClient extends Client {
     });
 
     this.commands = new Collection();
-    this.dropService = new RandomDropService(this);
   }
 
   /**

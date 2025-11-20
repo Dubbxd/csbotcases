@@ -8,59 +8,6 @@ import { cooldownManager } from '../middleware/cooldownManager';
 export default {
   name: Events.InteractionCreate,
   async execute(interaction: Interaction) {
-    // Handle button interactions (for drop claims)
-    if (interaction.isButton()) {
-      if (interaction.customId.startsWith('claim_drop_')) {
-        const client = interaction.client as ExtendedClient;
-        const dropService = client.dropService;
-
-        if (!dropService) {
-          return interaction.reply({
-            content: '❌ Drop system is not initialized.',
-            ephemeral: true,
-          });
-        }
-
-        const result = await dropService.claimDrop(interaction.message.id, interaction.user.id);
-
-        if (result.success) {
-          const rarityEmojis: { [key: string]: string } = {
-            COMMON: '⚪',
-            UNCOMMON: '🔵',
-            RARE: '🟣',
-            EPIC: '🟣',
-            LEGENDARY: '🟡',
-            EXOTIC: '🔴',
-          };
-
-          // Update original message
-          const claimedEmbed = new EmbedBuilder()
-            .setTitle('✅ Drop Claimed!')
-            .setDescription(`${interaction.user} claimed ${rarityEmojis[result.item?.rarity || 'COMMON']} **${result.item?.name}**!`)
-            .setColor(0x00FF00)
-            .setFooter({ text: 'Better luck next time!' })
-            .setTimestamp();
-
-          await interaction.message.edit({
-            embeds: [claimedEmbed],
-            components: [],
-          });
-
-          await interaction.reply({
-            content: `🎉 ${result.message}`,
-            ephemeral: true,
-          });
-        } else {
-          await interaction.reply({
-            content: `❌ ${result.message}`,
-            ephemeral: true,
-          });
-        }
-
-        return;
-      }
-    }
-
     if (!interaction.isChatInputCommand()) return;
 
     const client = interaction.client as ExtendedClient;

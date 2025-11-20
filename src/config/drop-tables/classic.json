@@ -1,0 +1,42 @@
+{
+  "id": 1,
+  "name": "Classic Case",
+  "description": "Caja clásica con skins icónicas de CS:GO",
+  "collection": "Classic",
+  "iconUrl": "https://example.com/cases/classic.png",
+  "dropTable": {
+    "COMMON": 0.55,
+    "UNCOMMON": 0.30,
+    "RARE": 0.10,
+    "VERY_RARE": 0.04,
+    "LEGENDARY": 0.01
+  },
+  "items": {
+    "COMMON": [
+      { "weapon": "Glock-18", "skin": "Water Elemental", "weight": 1.0 },
+      { "weapon": "P250", "skin": "Muertos", "weight": 1.0 },
+      { "weapon": "MAC-10", "skin": "Neon Rider", "weight": 1.0 },
+      { "weapon": "PP-Bizon", "skin": "Judgement of Anubis", "weight": 1.0 },
+      { "weapon": "MP9", "skin": "Deadly Poison", "weight": 1.0 }
+    ],
+    "UNCOMMON": [
+      { "weapon": "M4A4", "skin": "龍王 (Dragon King)", "weight": 1.0 },
+      { "weapon": "AK-47", "skin": "Elite Build", "weight": 1.0 },
+      { "weapon": "SSG 08", "skin": "Blood in the Water", "weight": 1.0 },
+      { "weapon": "USP-S", "skin": "Orion", "weight": 1.0 }
+    ],
+    "RARE": [
+      { "weapon": "M4A1-S", "skin": "Hyper Beast", "weight": 1.0 },
+      { "weapon": "AK-47", "skin": "Aquamarine Revenge", "weight": 1.0 },
+      { "weapon": "AWP", "skin": "Man-o'-war", "weight": 1.0 }
+    ],
+    "VERY_RARE": [
+      { "weapon": "M4A4", "skin": "Howl", "weight": 1.0 },
+      { "weapon": "AK-47", "skin": "Fire Serpent", "weight": 1.0 }
+    ],
+    "LEGENDARY": [
+      { "weapon": "★ Karambit", "skin": "Fade", "weight": 1.0 },
+      { "weapon": "★ M9 Bayonet", "skin": "Doppler", "weight": 1.0 }
+    ]
+  }
+}

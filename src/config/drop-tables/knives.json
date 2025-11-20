@@ -1,0 +1,35 @@
+{
+  "id": 2,
+  "name": "Knife Collection",
+  "description": "Caja especial con solo cuchillos raros",
+  "collection": "Knives",
+  "iconUrl": "https://example.com/cases/knives.png",
+  "dropTable": {
+    "RARE": 0.40,
+    "VERY_RARE": 0.35,
+    "LEGENDARY": 0.20,
+    "EXOTIC": 0.05
+  },
+  "items": {
+    "RARE": [
+      { "weapon": "★ Flip Knife", "skin": "Vanilla", "weight": 1.0 },
+      { "weapon": "★ Gut Knife", "skin": "Doppler", "weight": 1.0 },
+      { "weapon": "★ Falchion Knife", "skin": "Fade", "weight": 1.0 }
+    ],
+    "VERY_RARE": [
+      { "weapon": "★ Bayonet", "skin": "Tiger Tooth", "weight": 1.0 },
+      { "weapon": "★ Huntsman Knife", "skin": "Slaughter", "weight": 1.0 },
+      { "weapon": "★ Bowie Knife", "skin": "Marble Fade", "weight": 1.0 }
+    ],
+    "LEGENDARY": [
+      { "weapon": "★ M9 Bayonet", "skin": "Crimson Web", "weight": 1.0 },
+      { "weapon": "★ Karambit", "skin": "Doppler", "weight": 1.0 },
+      { "weapon": "★ Butterfly Knife", "skin": "Fade", "weight": 1.0 }
+    ],
+    "EXOTIC": [
+      { "weapon": "★ Karambit", "skin": "Gamma Doppler", "weight": 0.5 },
+      { "weapon": "★ Butterfly Knife", "skin": "Crimson Web", "weight": 0.3 },
+      { "weapon": "★ M9 Bayonet", "skin": "Ruby", "weight": 0.2 }
+    ]
+  }
+}

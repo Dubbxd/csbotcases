@@ -1,0 +1,394 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USERS & GUILDS ====================
+
+model User {
+  id        String   @id // Discord user ID
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  banned    Boolean  @default(false)
+  banReason String?
+
+  // Relations
+  guildProfiles UserGuildProfile[]
+  items         UserItem[]
+  cases         UserCase[]
+  keys          UserKey[]
+  transactions  Transaction[]
+  marketListings MarketListing[] @relation("Seller")
+  purchases      MarketListing[] @relation("Buyer")
+  voteLogs       VoteLog[]
+
+  @@index([banned])
+}
+
+model Guild {
+  id        String   @id // Discord guild ID
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  active    Boolean  @default(true)
+
+  // Relations
+  userProfiles UserGuildProfile[]
+  config       GuildConfig?
+
+  @@index([active])
+}
+
+model UserGuildProfile {
+  id            Int      @id @default(autoincrement())
+  userId        String
+  guildId       String
+  xp            Int      @default(0)
+  level         Int      @default(1)
+  coins         Int      @default(0)
+  totalMessages Int      @default(0)
+  lastMessageAt DateTime?
+  lastDailyAt   DateTime?
+  casesOpened   Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, guildId])
+  @@index([userId])
+  @@index([guildId])
+  @@index([xp])
+  @@index([level])
+}
+
+// ==================== ITEMS & DEFINITIONS ====================
+
+enum ItemType {
+  WEAPON
+  AGENT
+  SHELF
+  BACKGROUND
+  STICKER
+  CHARM
+}
+
+enum Rarity {
+  COMMON
+  UNCOMMON
+  RARE
+  VERY_RARE
+  LEGENDARY
+  EXOTIC
+}
+
+model ItemDefinition {
+  id          Int      @id @default(autoincrement())
+  name        String
+  type        ItemType
+  rarity      Rarity
+  collection  String?
+  description String?
+  iconUrl     String?
+  animatedUrl String?
+  weapon      String? // AK-47, AWP, etc.
+  skin        String? // Dragon Lore, Asiimov, etc.
+  statTrak    Boolean  @default(false)
+  foil        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  userItems      UserItem[]
+  caseDropItems  CaseDropItem[]
+  shopItems      ShopItem[]
+
+  @@index([type])
+  @@index([rarity])
+  @@index([collection])
+}
+
+model UserItem {
+  id          Int       @id @default(autoincrement())
+  ownerId     String
+  guildId     String?
+  itemDefId   Int
+  createdAt   DateTime  @default(now())
+  obtainedVia String? // "case", "shop", "market", "daily", "vote"
+  inMarket    Boolean   @default(false)
+  equippedSlot Int?     // For shelf display
+  locked      Boolean   @default(false)
+
+  // Relations
+  owner     User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  itemDef   ItemDefinition @relation(fields: [itemDefId], references: [id])
+  marketListing MarketListing?
+
+  @@index([ownerId])
+  @@index([guildId])
+  @@index([itemDefId])
+  @@index([inMarket])
+}
+
+// ==================== CASES & DROPS ====================
+
+model CaseDefinition {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  iconUrl     String?
+  collection  String?
+  limited     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  userCases     UserCase[]
+  dropTables    CaseDropTable[]
+  dropItems     CaseDropItem[]
+  keys          KeyDefinition[]
+
+  @@index([limited])
+}
+
+model CaseDropTable {
+  id          Int    @id @default(autoincrement())
+  caseId      Int
+  rarity      Rarity
+  probability Float // 0.0 - 1.0
+
+  // Relations
+  case CaseDefinition @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@unique([caseId, rarity])
+  @@index([caseId])
+}
+
+model CaseDropItem {
+  id        Int    @id @default(autoincrement())
+  caseId    Int
+  itemDefId Int
+  rarity    Rarity
+  weight    Float  @default(1.0) // For weighted random within rarity
+
+  // Relations
+  case    CaseDefinition @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  itemDef ItemDefinition @relation(fields: [itemDefId], references: [id])
+
+  @@index([caseId, rarity])
+  @@index([itemDefId])
+}
+
+model UserCase {
+  id        Int      @id @default(autoincrement())
+  ownerId   String
+  guildId   String?
+  caseId    Int
+  createdAt DateTime @default(now())
+
+  // Relations
+  owner User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  case  CaseDefinition @relation(fields: [caseId], references: [id])
+
+  @@index([ownerId])
+  @@index([guildId])
+  @@index([caseId])
+}
+
+// ==================== KEYS ====================
+
+model KeyDefinition {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  iconUrl     String?
+  caseId      Int? // null = universal key
+
+  // Relations
+  case     CaseDefinition? @relation(fields: [caseId], references: [id])
+  userKeys UserKey[]
+
+  @@index([caseId])
+}
+
+model UserKey {
+  id        Int      @id @default(autoincrement())
+  ownerId   String
+  guildId   String?
+  keyDefId  Int
+  createdAt DateTime @default(now())
+
+  // Relations
+  owner  User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  keyDef KeyDefinition @relation(fields: [keyDefId], references: [id])
+
+  @@index([ownerId])
+  @@index([guildId])
+  @@index([keyDefId])
+}
+
+// ==================== ECONOMY ====================
+
+enum TransactionType {
+  DAILY
+  LEVEL_UP
+  CASE_OPEN
+  MARKET_BUY
+  MARKET_SELL
+  SHOP_BUY
+  VOTE_REWARD
+  ADMIN_ADJUST
+  RECYCLE
+}
+
+model Transaction {
+  id        Int             @id @default(autoincrement())
+  userId    String
+  guildId   String?
+  type      TransactionType
+  amount    Int // Can be negative
+  xpAmount  Int             @default(0)
+  createdAt DateTime        @default(now())
+  metadata  Json? // Extra info (item bought, case opened, etc)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([guildId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ==================== SHOP ====================
+
+model ShopItem {
+  id          Int       @id @default(autoincrement())
+  itemDefId   Int?
+  caseDefId   Int?
+  keyDefId    Int?
+  type        String // "item", "case", "key", "coins"
+  name        String
+  description String?
+  price       Int
+  stock       Int? // null = unlimited
+  isRotating  Boolean   @default(false)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  itemDef ItemDefinition? @relation(fields: [itemDefId], references: [id])
+
+  @@index([isRotating])
+  @@index([endDate])
+}
+
+// ==================== MARKET ====================
+
+model MarketListing {
+  id         Int       @id @default(autoincrement())
+  sellerId   String
+  guildId    String?
+  userItemId Int       @unique
+  price      Int
+  feePercent Float     @default(5.0)
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  soldAt     DateTime?
+  buyerId    String?
+
+  // Relations
+  seller   User     @relation("Seller", fields: [sellerId], references: [id], onDelete: Cascade)
+  buyer    User?    @relation("Buyer", fields: [buyerId], references: [id])
+  userItem UserItem @relation(fields: [userItemId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+  @@index([buyerId])
+  @@index([guildId])
+  @@index([isActive])
+  @@index([price])
+  @@index([createdAt])
+}
+
+// ==================== GUILD CONFIG ====================
+
+model GuildConfig {
+  id                    Int      @id @default(autoincrement())
+  guildId               String   @unique
+  xpPerMessageMin       Int      @default(10)
+  xpPerMessageMax       Int      @default(25)
+  xpCooldownSeconds     Int      @default(60)
+  xpMinMessageLength    Int      @default(3)
+  levelUpRewardType     String   @default("case") // "case", "coins", "both"
+  levelUpRewardCoins    Int      @default(50)
+  levelUpChannelId      String?
+  logChannelId          String?
+  marketEnabled         Boolean  @default(true)
+  marketGlobal          Boolean  @default(false) // true = cross-server market
+  caseOpenDailyLimit    Int      @default(10)
+  antiSpamEnabled       Boolean  @default(true)
+  ignoredChannels       String[] // Array of channel IDs
+  xpEnabledChannels     String[] // Empty = all channels
+  lastUpdatedAt         DateTime @updatedAt
+  createdAt             DateTime @default(now())
+
+  // Relations
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
+}
+
+// ==================== VOTES ====================
+
+model VoteLog {
+  id             Int      @id @default(autoincrement())
+  userId         String
+  platform       String   @default("topgg") // "topgg", "discordbotlist", etc
+  voteExternalId String   @unique // To prevent duplicates
+  createdAt      DateTime @default(now())
+  rewardGiven    Boolean  @default(false)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ==================== COSMETICS ====================
+
+model UserCosmetics {
+  id           Int      @id @default(autoincrement())
+  userId       String   @unique
+  guildId      String?
+  shelfId      Int? // ItemDefinition ID for shelf
+  backgroundId Int? // ItemDefinition ID for background
+  shelfSlots   Json? // Array of UserItem IDs to display
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([guildId])
+}
+
+// ==================== COOLDOWNS ====================
+
+model Cooldown {
+  id        String   @id // Format: "userId:guildId:type"
+  userId    String
+  guildId   String?
+  type      String // "xp", "daily", "case_open"
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@index([userId, type])
+}

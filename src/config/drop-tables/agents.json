@@ -1,0 +1,37 @@
+{
+  "id": 3,
+  "name": "Agent Case",
+  "description": "Desbloquea agentes únicos para tu colección",
+  "collection": "Agents",
+  "iconUrl": "https://example.com/cases/agents.png",
+  "dropTable": {
+    "COMMON": 0.50,
+    "UNCOMMON": 0.30,
+    "RARE": 0.15,
+    "VERY_RARE": 0.04,
+    "LEGENDARY": 0.01
+  },
+  "items": {
+    "COMMON": [
+      { "weapon": "Agent", "skin": "Soldier | Phoenix", "weight": 1.0 },
+      { "weapon": "Agent", "skin": "Enforcer | Phoenix", "weight": 1.0 },
+      { "weapon": "Agent", "skin": "Operator | FBI SWAT", "weight": 1.0 }
+    ],
+    "UNCOMMON": [
+      { "weapon": "Agent", "skin": "The Doctor | Sabre", "weight": 1.0 },
+      { "weapon": "Agent", "skin": "Osiris | Elite Crew", "weight": 1.0 },
+      { "weapon": "Agent", "skin": "Ground Rebel | Elite Crew", "weight": 1.0 }
+    ],
+    "RARE": [
+      { "weapon": "Agent", "skin": "Blackwolf | Sabre", "weight": 1.0 },
+      { "weapon": "Agent", "skin": "Rezan The Ready | Sabre", "weight": 1.0 }
+    ],
+    "VERY_RARE": [
+      { "weapon": "Agent", "skin": "Sir Bloody Miami Darryl | The Professionals", "weight": 1.0 },
+      { "weapon": "Agent", "skin": "Sir Bloody Skullhead Darryl | The Professionals", "weight": 1.0 }
+    ],
+    "LEGENDARY": [
+      { "weapon": "Agent", "skin": "The Elite Mr. Muhlik | Elite Crew", "weight": 1.0 }
+    ]
+  }
+}

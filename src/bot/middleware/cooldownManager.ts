@@ -1,19 +1,53 @@
 import { Redis } from 'ioredis';
 import { env } from '../../config/env';
 
+interface CooldownData {
+  expiresAt: number;
+}
+
 class CooldownManager {
-  private redis: Redis;
+  private redis: Redis | null = null;
+  private memoryCache: Map<string, CooldownData> = new Map();
+  private useRedis: boolean = false;
 
   constructor() {
-    this.redis = new Redis({
-      host: env.REDIS_HOST,
-      port: env.REDIS_PORT,
-      password: env.REDIS_PASSWORD || undefined,
-    });
+    // Only use Redis if explicitly configured
+    if (env.REDIS_HOST && env.REDIS_HOST !== 'localhost') {
+      try {
+        this.redis = new Redis({
+          host: env.REDIS_HOST,
+          port: env.REDIS_PORT,
+          password: env.REDIS_PASSWORD || undefined,
+          retryStrategy: () => null, // Don't retry on failure
+          maxRetriesPerRequest: 1,
+        });
 
-    this.redis.on('error', (err) => {
-      console.error('Redis Client Error', err);
-    });
+        this.redis.on('connect', () => {
+          this.useRedis = true;
+          console.log('✅ Redis connected for cooldowns');
+        });
+
+        this.redis.on('error', (err) => {
+          this.useRedis = false;
+          console.warn('⚠️ Redis unavailable, using memory cache for cooldowns');
+        });
+      } catch (error) {
+        console.warn('⚠️ Redis initialization failed, using memory cache');
+        this.redis = null;
+      }
+    } else {
+      console.log('ℹ️ Using memory cache for cooldowns (Redis not configured)');
+    }
+
+    // Clean up expired memory cache entries every minute
+    setInterval(() => {
+      const now = Date.now();
+      for (const [key, data] of this.memoryCache.entries()) {
+        if (data.expiresAt < now) {
+          this.memoryCache.delete(key);
+        }
+      }
+    }, 60000);
   }
 
   /**
@@ -26,7 +60,13 @@ class CooldownManager {
     guildId?: string
   ): Promise<void> {
     const key = this.getKey(userId, type, guildId);
-    await this.redis.setex(key, durationSeconds, Date.now().toString());
+    
+    if (this.useRedis && this.redis) {
+      await this.redis.setex(key, durationSeconds, Date.now().toString());
+    } else {
+      const expiresAt = Date.now() + (durationSeconds * 1000);
+      this.memoryCache.set(key, { expiresAt });
+    }
   }
 
   /**
@@ -38,8 +78,19 @@ class CooldownManager {
     guildId?: string
   ): Promise<boolean> {
     const key = this.getKey(userId, type, guildId);
-    const exists = await this.redis.exists(key);
-    return exists === 1;
+    
+    if (this.useRedis && this.redis) {
+      const exists = await this.redis.exists(key);
+      return exists === 1;
+    } else {
+      const data = this.memoryCache.get(key);
+      if (!data) return false;
+      if (data.expiresAt < Date.now()) {
+        this.memoryCache.delete(key);
+        return false;
+      }
+      return true;
+    }
   }
 
   /**
@@ -51,8 +102,16 @@ class CooldownManager {
     guildId?: string
   ): Promise<number> {
     const key = this.getKey(userId, type, guildId);
-    const ttl = await this.redis.ttl(key);
-    return ttl > 0 ? ttl : 0;
+    
+    if (this.useRedis && this.redis) {
+      const ttl = await this.redis.ttl(key);
+      return ttl > 0 ? ttl : 0;
+    } else {
+      const data = this.memoryCache.get(key);
+      if (!data) return 0;
+      const remaining = Math.ceil((data.expiresAt - Date.now()) / 1000);
+      return remaining > 0 ? remaining : 0;
+    }
   }
 
   /**
@@ -64,7 +123,12 @@ class CooldownManager {
     guildId?: string
   ): Promise<void> {
     const key = this.getKey(userId, type, guildId);
-    await this.redis.del(key);
+    
+    if (this.useRedis && this.redis) {
+      await this.redis.del(key);
+    } else {
+      this.memoryCache.delete(key);
+    }
   }
 
   /**
@@ -103,7 +167,10 @@ class CooldownManager {
    * Close Redis connection
    */
   async disconnect() {
-    await this.redis.quit();
+    if (this.redis) {
+      await this.redis.quit();
+    }
+    this.memoryCache.clear();
   }
 }
 

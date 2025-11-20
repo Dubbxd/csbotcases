@@ -4,6 +4,7 @@ import { RARITY_CONFIG, COLORS, getRarityDisplayName } from '../../../config/con
 import { EmbedHelper } from '../../utils/embeds';
 import { SteamImageFetcher } from '../../../core/scraper/steamImageFetcher';
 import { getSteamImageProxyUrl } from '../../../core/utils/imageProxy';
+import { searchSteamItem } from '../../../core/scraper/steamMarketClient';
 import prisma from '../../../db/client';
 
 export default {
@@ -105,6 +106,7 @@ export default {
 
       // SECOND: While animating, fetch the image from Steam if not already cached
       let itemImageUrl = result.item.iconUrl;
+      let itemPriceUSD: number | null = null;
       
       // Define rarity colors for animation
       const rarityColors = [
@@ -148,32 +150,33 @@ export default {
         }
       })();
 
-      // FOURTH: Fetch image from Steam in parallel if not cached
-      const imagePromise = (async () => {
-        if (!itemImageUrl) {
-          try {
-            // Fetch image URL from Steam Community Market in real-time
-            console.log(`🔍 Fetching Steam image for: ${result.item.weapon} | ${result.item.skin}`);
-            
-            const fetchedUrl = await SteamImageFetcher.fetchByWeaponSkin(
-              result.item.weapon,
-              result.item.skin
-            );
-            
-            if (fetchedUrl) {
-              itemImageUrl = fetchedUrl;
-              console.log(`✅ Found image: ${fetchedUrl}`);
-            } else {
-              console.log(`⚠️ No image found on Steam for ${result.item.weapon} | ${result.item.skin}`);
+      // FOURTH: Fetch image and price from Steam Market in parallel
+      const steamDataPromise = (async () => {
+        try {
+          // Fetch from Steam Market API (incluye imagen Y precio)
+          console.log(`🔍 Fetching Steam data for: ${result.item.name}`);
+          
+          const steamItem = await searchSteamItem(result.item.name, 1); // 1 = USD
+          
+          if (steamItem) {
+            if (steamItem.imageUrl) {
+              itemImageUrl = steamItem.imageUrl;
+              console.log(`✅ Found image: ${steamItem.imageUrl}`);
             }
-          } catch (error) {
-            console.error('Error fetching Steam image:', error);
+            if (steamItem.priceUSD > 0) {
+              itemPriceUSD = steamItem.priceUSD;
+              console.log(`💲 Steam Market price: $${steamItem.priceUSD.toFixed(2)} USD`);
+            }
+          } else {
+            console.log(`⚠️ No data found on Steam Market for ${result.item.name}`);
           }
+        } catch (error) {
+          console.error('Error fetching Steam Market data:', error);
         }
       })();
 
-      // Wait for both animation and image fetching to complete
-      await Promise.all([animationPromise, imagePromise]);
+      // Wait for both animation and Steam data fetching to complete
+      await Promise.all([animationPromise, steamDataPromise]);
 
       // Show final rarity color before revealing
       const resultRarityColor = rarityColors.find(r => r.name === result.item.rarity) || rarityColors[0];
@@ -201,14 +204,23 @@ export default {
       const finalEmbed = new EmbedBuilder()
         .setTitle(`${caseEmojis[caseId - 1]} Case Opened!`)
         .setDescription(`**🎉 ${interaction.user.username} unboxed:**\n\n${rarityEmojis[result.item.rarity]} **${result.item.name}**`)
-        .setColor(RARITY_CONFIG[result.item.rarity as keyof typeof RARITY_CONFIG].color)
-        .addFields(
-          { name: '✨ Rarity', value: getRarityDisplayName(result.item.rarity), inline: true },
-          { name: '💰 Bonus Coins', value: `+${result.bonusCoins}`, inline: true },
-          { name: '⭐ Bonus XP', value: `+${result.bonusXP}`, inline: true }
-        )
-        .setFooter({ text: `Use /inventory to see all your items | Opened: ${caseEmojis[caseId - 1]} ${caseNames[caseId - 1]}` })
-        .setTimestamp();
+        .setColor(RARITY_CONFIG[result.item.rarity as keyof typeof RARITY_CONFIG].color);
+      
+      // Add fields
+      const fields: Array<{ name: string; value: string; inline: boolean }> = [
+        { name: '✨ Rarity', value: getRarityDisplayName(result.item.rarity), inline: true },
+        { name: '💰 Bonus Coins', value: `+${result.bonusCoins}`, inline: true },
+        { name: '⭐ Bonus XP', value: `+${result.bonusXP}`, inline: true }
+      ];
+      
+      // Add Steam Market price if available
+      if (itemPriceUSD !== null && itemPriceUSD > 0) {
+        fields.push({ name: '💵 Market Value', value: `$${(itemPriceUSD as number).toFixed(2)} USD`, inline: true });
+      }
+      
+      finalEmbed.addFields(fields);
+      finalEmbed.setFooter({ text: `Use /inventory to see all your items | Opened: ${caseEmojis[caseId - 1]} ${caseNames[caseId - 1]}` });
+      finalEmbed.setTimestamp();
 
       // Add item image if available (should be loaded by now)
       const imageToShow = itemImageUrl || result.item.iconUrl;

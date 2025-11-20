@@ -239,21 +239,6 @@ export default {
         });
 
         actionRows.push(actionRow);
-
-        // Add sell buttons
-        const sellRow = new ActionRowBuilder<ButtonBuilder>();
-        pageItems.forEach((item, index) => {
-          const itemNumber = start + index + 1;
-          sellRow.addComponents(
-            new ButtonBuilder()
-              .setCustomId(`sell_${item.id}`)
-              .setLabel(`💰 Sell #${itemNumber}`)
-              .setStyle(item.inMarket ? ButtonStyle.Danger : ButtonStyle.Success)
-              .setDisabled(item.inMarket)
-          );
-        });
-
-        actionRows.push(sellRow);
       }
 
       return actionRows;
@@ -316,11 +301,11 @@ export default {
           const proxiedUrl = getSteamImageProxyUrl(item.itemDef.iconUrl);
           
           const inspectEmbed = new EmbedBuilder()
-            .setTitle(`🔍 ${item.itemDef.name}`)
+            .setTitle(`${config?.emoji || '⚪'} ${item.itemDef.name}`)
             .setColor(config?.color || 0x5865F2)
             .setDescription(item.itemDef.description || 'A weapon skin from a case opening.')
             .addFields(
-              { name: '🎨 Rarity', value: `${config?.emoji || '⚪'} ${rarityName}`, inline: true },
+              { name: '🎨 Rarity', value: rarityName, inline: true },
               { name: '🔫 Weapon', value: item.itemDef.weapon || 'Unknown', inline: true },
               { name: '🎭 Skin', value: item.itemDef.skin || 'Default', inline: true },
               { name: '📦 Item ID', value: `\`${item.id}\``, inline: true },
@@ -331,32 +316,52 @@ export default {
           if (proxiedUrl) {
             inspectEmbed.setImage(proxiedUrl);
           }
-          
-          inspectEmbed.setFooter({ text: '💡 Use the Sell button to list this item on the market' });
-          
-          await buttonInteraction.reply({ embeds: [inspectEmbed], ephemeral: true });
-        }
-      }
-      // Handle sell button
-      else if (buttonInteraction.customId.startsWith('sell_')) {
-        const itemId = parseInt(buttonInteraction.customId.replace('sell_', ''));
-        const item = items.find(i => i.id === itemId);
-        
-        if (!item) {
-          await buttonInteraction.reply({ content: '❌ Item not found!', ephemeral: true });
-          return;
-        }
 
-        if (item.inMarket) {
-          await buttonInteraction.reply({ content: '❌ This item is already listed on the market!', ephemeral: true });
-          return;
-        }
+          // Create Sell button
+          const sellButton = new ActionRowBuilder<ButtonBuilder>()
+            .addComponents(
+              new ButtonBuilder()
+                .setCustomId(`sell_${item.id}`)
+                .setLabel(item.inMarket ? '🏪 Already Listed' : '💰 Sell on Market')
+                .setStyle(item.inMarket ? ButtonStyle.Danger : ButtonStyle.Success)
+                .setDisabled(item.inMarket)
+            );
+          
+          await buttonInteraction.reply({ 
+            embeds: [inspectEmbed], 
+            components: [sellButton],
+            ephemeral: true 
+          });
 
-        // Show price input modal
-        await buttonInteraction.reply({
-          content: `💰 To list **${item.itemDef.name}** on the market, use:\n\`\`\`/market list item_id:${item.id} price:YOUR_PRICE\`\`\`\n\n💡 Recommended prices:\n• Mil-Spec: 50-200 coins\n• Restricted: 200-500 coins\n• Classified: 500-1500 coins\n• Covert: 1500-5000 coins\n• Knives: 5000+ coins`,
-          ephemeral: true
-        });
+          // Create collector for sell button in inspect
+          const inspectMessage = await buttonInteraction.fetchReply();
+          const sellCollector = inspectMessage.createMessageComponentCollector({
+            componentType: ComponentType.Button,
+            time: 2 * 60 * 1000, // 2 minutes
+            filter: (i) => i.user.id === userId && i.customId.startsWith('sell_'),
+          });
+
+          sellCollector.on('collect', async (sellInteraction) => {
+            const sellItemId = parseInt(sellInteraction.customId.replace('sell_', ''));
+            const sellItem = items.find(i => i.id === sellItemId);
+            
+            if (!sellItem) {
+              await sellInteraction.reply({ content: '❌ Item not found!', ephemeral: true });
+              return;
+            }
+
+            if (sellItem.inMarket) {
+              await sellInteraction.reply({ content: '❌ This item is already listed on the market!', ephemeral: true });
+              return;
+            }
+
+            // Show price input instructions
+            await sellInteraction.reply({
+              content: `💰 To list **${sellItem.itemDef.name}** on the market, use:\n\`\`\`/market list item_id:${sellItem.id} price:YOUR_PRICE\`\`\`\n\n💡 Recommended prices:\n• Mil-Spec: 50-200 coins\n• Restricted: 200-500 coins\n• Classified: 500-1500 coins\n• Covert: 1500-5000 coins\n• Knives: 5000+ coins`,
+              ephemeral: true
+            });
+          });
+        }
       }
     });
 

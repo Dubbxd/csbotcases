@@ -11,7 +11,7 @@ const router = Router();
  */
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const imageUrl = req.query.url as string;
+    let imageUrl = req.query.url as string;
 
     if (!imageUrl) {
       return res.status(400).json({ error: 'Missing url parameter' });
@@ -22,14 +22,35 @@ router.get('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid image URL. Only Steam CDN URLs are allowed.' });
     }
 
-    // Fetch the image from Steam
-    const response = await axios.get(imageUrl, {
-      responseType: 'arraybuffer',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-      timeout: 10000, // 10 second timeout
-    });
+    // Try fetching the image with the original URL first
+    let response;
+    try {
+      response = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+        },
+        timeout: 10000,
+        validateStatus: (status) => status === 200,
+      });
+    } catch (error: any) {
+      // If it fails with 404 and has size parameter, try without it
+      if (error.response?.status === 404 && imageUrl.includes('/256fx256f')) {
+        console.log('Retrying without size parameter...');
+        imageUrl = imageUrl.replace('/256fx256f', '');
+        response = await axios.get(imageUrl, {
+          responseType: 'arraybuffer',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+          },
+          timeout: 10000,
+        });
+      } else {
+        throw error;
+      }
+    }
 
     // Get the content type
     const contentType = response.headers['content-type'] || 'image/png';
@@ -45,9 +66,10 @@ router.get('/', async (req: Request, res: Response) => {
     res.send(response.data);
   } catch (error: any) {
     console.error('Error proxying image:', error.message);
+    console.error('URL attempted:', req.query.url);
     
     if (error.response?.status === 404) {
-      return res.status(404).json({ error: 'Image not found' });
+      return res.status(404).json({ error: 'Image not found on Steam CDN' });
     }
     
     res.status(500).json({ error: 'Failed to fetch image' });

@@ -11,8 +11,12 @@ class CooldownManager {
   private useRedis: boolean = false;
 
   constructor() {
-    // Only use Redis if explicitly configured
-    if (env.REDIS_HOST && env.REDIS_HOST !== 'localhost') {
+    // Only use Redis if explicitly configured and not a Railway internal URL
+    const isRedisConfigured = env.REDIS_HOST && 
+                              env.REDIS_HOST !== 'localhost' && 
+                              !env.REDIS_HOST.includes('railway.internal');
+    
+    if (isRedisConfigured) {
       try {
         this.redis = new Redis({
           host: env.REDIS_HOST,

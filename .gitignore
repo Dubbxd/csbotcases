@@ -31,7 +31,7 @@ yarn-error.log*
 Thumbs.db
 
 # Prisma
-prisma/migrations/
+# Keep migrations for deployment
 
 # Temp
 temp/

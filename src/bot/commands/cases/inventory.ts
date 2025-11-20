@@ -86,106 +86,76 @@ export default {
     const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
 
     const generateEmbeds = (page: number) => {
-      const embeds: EmbedBuilder[] = [];
+      const start = page * ITEMS_PER_PAGE;
+      const end = start + ITEMS_PER_PAGE;
+      const pageItems = items.slice(start, end);
       
-      // Main inventory embed
+      // Single main embed with everything
       const mainEmbed = new EmbedBuilder()
         .setTitle(`📦 ${interaction.user.username}'s Inventory`)
         .setColor(0x5865F2)
         .setThumbnail(interaction.user.displayAvatarURL());
 
-      // Add cases section
+      // Compact cases and keys in one line each
+      let summaryLines: string[] = [];
+      
       if (cases.length > 0) {
         const caseCounts: { [key: string]: number } = {};
         cases.forEach(c => {
           const name = c.case.name;
           caseCounts[name] = (caseCounts[name] || 0) + 1;
         });
-        
-        const casesList = Object.entries(caseCounts)
+        const casesText = Object.entries(caseCounts)
           .map(([name, count]) => {
-            const emoji = name.includes('Dreams') ? '🌙' : name.includes('Chroma') ? '🌈' : '📦';
-            return `${emoji} **${name}** x${count}`;
+            const emoji = name.includes('Dreams') ? '🌙' : '🌈';
+            const shortName = name.replace(' Case', '');
+            return `${emoji} ${shortName} x${count}`;
           })
-          .join('\n');
-        
-        mainEmbed.addFields({
-          name: `📦 Cases (${cases.length} total)`,
-          value: casesList,
-          inline: false,
-        });
+          .join(' • ');
+        summaryLines.push(`📦 **Cases:** ${casesText}`);
       }
 
-      // Add keys section
       if (keys.length > 0) {
-        const keyCounts: { [key: string]: number } = {};
-        keys.forEach(k => {
-          const name = k.keyDef.name;
-          keyCounts[name] = (keyCounts[name] || 0) + 1;
-        });
-        
-        const keysList = Object.entries(keyCounts)
-          .map(([name, count]) => `🔑 **${name}** x${count}`)
-          .join('\n');
-        
-        mainEmbed.addFields({
-          name: `🔑 Keys (${keys.length} total)`,
-          value: keysList,
-          inline: false,
-        });
+        summaryLines.push(`🔑 **Keys:** ${keys.length}x Universal`);
       }
 
-      // Add items section
-      if (items.length > 0) {
-        const start = page * ITEMS_PER_PAGE;
-        const end = start + ITEMS_PER_PAGE;
-        const pageItems = items.slice(start, end);
+      if (summaryLines.length > 0) {
+        mainEmbed.setDescription(summaryLines.join('\n'));
+      }
 
-        mainEmbed.addFields({
-          name: '✨ Your Items',
-          value: `📊 Showing ${start + 1}-${Math.min(end, items.length)} of ${items.length} items${rarityFilter ? ` (Filtered: ${getRarityDisplayName(rarityFilter)})` : ''}`,
-          inline: false,
-        });
-
-        mainEmbed.setFooter({ 
-          text: `Page ${page + 1}/${totalPages} | 💡 Select an item to inspect or sell` 
-        });
-
-        embeds.push(mainEmbed);
-
-        // Create individual embeds for each item with their images
+      // Add items with images
+      if (items.length > 0 && pageItems.length > 0) {
         pageItems.forEach((item, index) => {
           const config = RARITY_CONFIG[item.itemDef.rarity as keyof typeof RARITY_CONFIG];
           const rarityName = getRarityDisplayName(item.itemDef.rarity);
           const itemNumber = start + index + 1;
+          const statusEmoji = item.inMarket ? '🏪' : '✅';
           
-          const itemEmbed = new EmbedBuilder()
-            .setColor(config?.color || 0x5865F2)
-            .setTitle(`${config?.emoji || '⚪'} ${itemNumber}. ${item.itemDef.name}`)
-            .addFields(
-              { name: '🎨 Rarity', value: rarityName, inline: true },
-              { name: '🆔 Item ID', value: `\`${item.id}\``, inline: true },
-              { name: '💼 Status', value: item.inMarket ? '🏪 Listed on Market' : '✅ Available', inline: true }
-            );
-
-          // Add image if available
-          if (item.itemDef.iconUrl) {
-            const proxiedUrl = getSteamImageProxyUrl(item.itemDef.iconUrl);
-            if (proxiedUrl) {
-              itemEmbed.setThumbnail(proxiedUrl);
-            }
-          }
-
-          embeds.push(itemEmbed);
+          mainEmbed.addFields({
+            name: `${config?.emoji || '⚪'} ${itemNumber}. ${item.itemDef.name}`,
+            value: `${rarityName} • ID: \`${item.id}\` • ${statusEmoji}`,
+            inline: false,
+          });
         });
-      } else {
+
+        // Show image of the first item on the page
+        if (pageItems[0]?.itemDef.iconUrl) {
+          const proxiedUrl = getSteamImageProxyUrl(pageItems[0].itemDef.iconUrl);
+          if (proxiedUrl) {
+            mainEmbed.setImage(proxiedUrl);
+          }
+        }
+
+        mainEmbed.setFooter({ 
+          text: `Page ${page + 1}/${totalPages} • ${items.length} items total • Click 🔍 to inspect` 
+        });
+      } else if (items.length === 0) {
         mainEmbed.setFooter({ 
           text: `💡 Use /open to open cases | Use /shop to buy more` 
         });
-        embeds.push(mainEmbed);
       }
 
-      return embeds;
+      return [mainEmbed];
     };
 
     const generateButtons = (page: number) => {

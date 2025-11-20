@@ -45,14 +45,21 @@ async function seedCS2Cases() {
   // ============================================
   console.log('📦 Creating Dreams & Nightmares Case...');
   
-  const dreamsCase = await prisma.caseDefinition.create({
-    data: {
+  const dreamsCase = await prisma.caseDefinition.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
       id: 1, // ID FIJO
       name: 'Dreams & Nightmares Case',
       description: 'Community-designed skins from the Dreams & Nightmares contest',
       iconUrl: 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DAQ1h3LAVbv6mxFABs3OXNYgJR_Nm1nYGHnuTgDL_ehG5u5Mx2gv2P9NWtiQzlqRBrYWHyLdDAIQ5rZgnR-1boxefxxcjrPZVb2Ww/256fx256f',
       collection: 'Dreams & Nightmares',
     },
+  });
+
+  // Delete existing drop tables for this case
+  await prisma.caseDropTable.deleteMany({
+    where: { caseId: dreamsCase.id },
   });
 
   // Create drop probability tables (CS2 accurate rates!)
@@ -243,14 +250,21 @@ async function seedCS2Cases() {
   // ============================================
   console.log('📦 Creating Chroma 3 Case...');
   
-  const chromaCase = await prisma.caseDefinition.create({
-    data: {
+  const chromaCase = await prisma.caseDefinition.upsert({
+    where: { id: 2 },
+    update: {},
+    create: {
       id: 2, // ID FIJO
       name: 'Chroma 3 Case',
       description: 'Contains one of the following community-designed weapon finishes',
       iconUrl: 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DAQ1h3LAVbv6mxFABs3OXNYgJR_Nm1nYGHnuTgDLfYhFRd4cJ5ntbN_Iv9nBrh8kFuMTz1IYadJANoMFzX-1O6kOi5gsC-6J-dy3Bh6z5iuyiCDRCDpA/256fx256f',
       collection: 'Chroma 3',
     },
+  });
+
+  // Delete existing drop tables for this case
+  await prisma.caseDropTable.deleteMany({
+    where: { caseId: chromaCase.id },
   });
 
   // Create drop probability tables

@@ -81,7 +81,7 @@ export default {
     }
 
     // Pagination setup for items
-    const ITEMS_PER_PAGE = 5;
+    const ITEMS_PER_PAGE = 3;
     let currentPage = 0;
     const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
 
@@ -132,13 +132,27 @@ export default {
         });
       }
 
-      // Add items section with pagination
+      // Add items section with images
       if (items.length > 0) {
         const start = page * ITEMS_PER_PAGE;
         const end = start + ITEMS_PER_PAGE;
         const pageItems = items.slice(start, end);
 
-        // Use the first item's image as the embed thumbnail (if any)
+        // Show each item with its details
+        pageItems.forEach((item, index) => {
+          const config = RARITY_CONFIG[item.itemDef.rarity as keyof typeof RARITY_CONFIG];
+          const rarityName = getRarityDisplayName(item.itemDef.rarity);
+          const itemNumber = start + index + 1;
+          
+          // Add field for each item
+          embed.addFields({
+            name: `${config?.emoji || '⚪'} ${itemNumber}. ${item.itemDef.name}`,
+            value: `**Rarity:** ${rarityName}\n**ID:** \`${item.id}\`\n**Status:** ${item.inMarket ? '🏪 Listed on Market' : '✅ Available'}`,
+            inline: true,
+          });
+        });
+
+        // Add images as thumbnails for the first item
         if (pageItems.length > 0 && pageItems[0].itemDef.iconUrl) {
           const proxiedUrl = getSteamImageProxyUrl(pageItems[0].itemDef.iconUrl);
           if (proxiedUrl) {
@@ -146,22 +160,14 @@ export default {
           }
         }
 
-        const itemsList = pageItems
-          .map((item, index) => {
-            const config = RARITY_CONFIG[item.itemDef.rarity as keyof typeof RARITY_CONFIG];
-            const rarityName = getRarityDisplayName(item.itemDef.rarity);
-            return `${config?.emoji || '⚪'} **${item.itemDef.name}**\n└ ${rarityName} • ID: \`${item.id}\``;
-          })
-          .join('\n\n');
-
         embed.addFields({
-          name: `✨ Items (${items.length} total${rarityFilter ? ` - Filtered: ${rarityFilter}` : ''})`,
-          value: itemsList || 'No items',
+          name: '\u200b',
+          value: `📊 Showing ${start + 1}-${Math.min(end, items.length)} of ${items.length} items${rarityFilter ? ` (Filtered: ${getRarityDisplayName(rarityFilter)})` : ''}`,
           inline: false,
         });
 
         embed.setFooter({ 
-          text: `Page ${page + 1}/${totalPages} | 💡 Use buttons to navigate` 
+          text: `Page ${page + 1}/${totalPages} | 💡 Select an item to inspect or sell` 
         });
       } else {
         embed.setFooter({ 
@@ -173,16 +179,16 @@ export default {
     };
 
     const generateButtons = (page: number) => {
-      const row = new ActionRowBuilder<ButtonBuilder>()
+      const navigationRow = new ActionRowBuilder<ButtonBuilder>()
         .addComponents(
           new ButtonBuilder()
             .setCustomId('first')
-            .setLabel('⏮️ First')
+            .setLabel('⏮️')
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(page === 0),
           new ButtonBuilder()
             .setCustomId('prev')
-            .setLabel('◀️ Previous')
+            .setLabel('◀️')
             .setStyle(ButtonStyle.Primary)
             .setDisabled(page === 0),
           new ButtonBuilder()
@@ -192,29 +198,68 @@ export default {
             .setDisabled(true),
           new ButtonBuilder()
             .setCustomId('next')
-            .setLabel('Next ▶️')
+            .setLabel('▶️')
             .setStyle(ButtonStyle.Primary)
             .setDisabled(page >= totalPages - 1),
           new ButtonBuilder()
             .setCustomId('last')
-            .setLabel('Last ⏭️')
+            .setLabel('⏭️')
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(page >= totalPages - 1)
         );
-      return row;
+
+      // Add action buttons for items on current page
+      const start = page * ITEMS_PER_PAGE;
+      const end = start + ITEMS_PER_PAGE;
+      const pageItems = items.slice(start, end);
+
+      const actionRows: ActionRowBuilder<ButtonBuilder>[] = [navigationRow];
+
+      if (pageItems.length > 0) {
+        const actionRow = new ActionRowBuilder<ButtonBuilder>();
+        
+        pageItems.forEach((item, index) => {
+          const itemNumber = start + index + 1;
+          actionRow.addComponents(
+            new ButtonBuilder()
+              .setCustomId(`inspect_${item.id}`)
+              .setLabel(`🔍 #${itemNumber}`)
+              .setStyle(ButtonStyle.Secondary)
+          );
+        });
+
+        actionRows.push(actionRow);
+
+        // Add sell buttons
+        const sellRow = new ActionRowBuilder<ButtonBuilder>();
+        pageItems.forEach((item, index) => {
+          const itemNumber = start + index + 1;
+          sellRow.addComponents(
+            new ButtonBuilder()
+              .setCustomId(`sell_${item.id}`)
+              .setLabel(`💰 Sell #${itemNumber}`)
+              .setStyle(item.inMarket ? ButtonStyle.Danger : ButtonStyle.Success)
+              .setDisabled(item.inMarket)
+          );
+        });
+
+        actionRows.push(sellRow);
+      }
+
+      return actionRows;
     };
 
     // Send initial message
     const initialEmbed = generateEmbed(currentPage);
-    const components = items.length > ITEMS_PER_PAGE ? [generateButtons(currentPage)] : [];
+    const components = items.length > 0 ? generateButtons(currentPage) : [];
     
     const message = await interaction.editReply({ 
       embeds: [initialEmbed],
       components,
     });
 
-    // Only create collector if there are multiple pages
-    if (items.length <= ITEMS_PER_PAGE) return;
+    // Only create collector if there are items
+    if (items.length === 0) return;
 
     // Create button collector
     const collector = message.createMessageComponentCollector({
@@ -224,25 +269,85 @@ export default {
     });
 
     collector.on('collect', async (buttonInteraction) => {
-      switch (buttonInteraction.customId) {
-        case 'first':
-          currentPage = 0;
-          break;
-        case 'prev':
-          currentPage = Math.max(0, currentPage - 1);
-          break;
-        case 'next':
-          currentPage = Math.min(totalPages - 1, currentPage + 1);
-          break;
-        case 'last':
-          currentPage = totalPages - 1;
-          break;
+      // Handle navigation buttons
+      if (buttonInteraction.customId === 'first') {
+        currentPage = 0;
+        await buttonInteraction.update({
+          embeds: [generateEmbed(currentPage)],
+          components: generateButtons(currentPage),
+        });
+      } else if (buttonInteraction.customId === 'prev') {
+        currentPage = Math.max(0, currentPage - 1);
+        await buttonInteraction.update({
+          embeds: [generateEmbed(currentPage)],
+          components: generateButtons(currentPage),
+        });
+      } else if (buttonInteraction.customId === 'next') {
+        currentPage = Math.min(totalPages - 1, currentPage + 1);
+        await buttonInteraction.update({
+          embeds: [generateEmbed(currentPage)],
+          components: generateButtons(currentPage),
+        });
+      } else if (buttonInteraction.customId === 'last') {
+        currentPage = totalPages - 1;
+        await buttonInteraction.update({
+          embeds: [generateEmbed(currentPage)],
+          components: generateButtons(currentPage),
+        });
+      } 
+      // Handle inspect button
+      else if (buttonInteraction.customId.startsWith('inspect_')) {
+        const itemId = parseInt(buttonInteraction.customId.replace('inspect_', ''));
+        const item = items.find(i => i.id === itemId);
+        
+        if (item) {
+          const config = RARITY_CONFIG[item.itemDef.rarity as keyof typeof RARITY_CONFIG];
+          const rarityName = getRarityDisplayName(item.itemDef.rarity);
+          const proxiedUrl = getSteamImageProxyUrl(item.itemDef.iconUrl);
+          
+          const inspectEmbed = new EmbedBuilder()
+            .setTitle(`🔍 ${item.itemDef.name}`)
+            .setColor(config?.color || 0x5865F2)
+            .setDescription(item.itemDef.description || 'A weapon skin from a case opening.')
+            .addFields(
+              { name: '🎨 Rarity', value: `${config?.emoji || '⚪'} ${rarityName}`, inline: true },
+              { name: '🔫 Weapon', value: item.itemDef.weapon || 'Unknown', inline: true },
+              { name: '🎭 Skin', value: item.itemDef.skin || 'Default', inline: true },
+              { name: '📦 Item ID', value: `\`${item.id}\``, inline: true },
+              { name: '📅 Obtained', value: `<t:${Math.floor(item.createdAt.getTime() / 1000)}:R>`, inline: true },
+              { name: '💼 Status', value: item.inMarket ? '🏪 Listed on Market' : '✅ In Inventory', inline: true }
+            );
+          
+          if (proxiedUrl) {
+            inspectEmbed.setImage(proxiedUrl);
+          }
+          
+          inspectEmbed.setFooter({ text: '💡 Use the Sell button to list this item on the market' });
+          
+          await buttonInteraction.reply({ embeds: [inspectEmbed], ephemeral: true });
+        }
       }
+      // Handle sell button
+      else if (buttonInteraction.customId.startsWith('sell_')) {
+        const itemId = parseInt(buttonInteraction.customId.replace('sell_', ''));
+        const item = items.find(i => i.id === itemId);
+        
+        if (!item) {
+          await buttonInteraction.reply({ content: '❌ Item not found!', ephemeral: true });
+          return;
+        }
 
-      await buttonInteraction.update({
-        embeds: [generateEmbed(currentPage)],
-        components: [generateButtons(currentPage)],
-      });
+        if (item.inMarket) {
+          await buttonInteraction.reply({ content: '❌ This item is already listed on the market!', ephemeral: true });
+          return;
+        }
+
+        // Show price input modal
+        await buttonInteraction.reply({
+          content: `💰 To list **${item.itemDef.name}** on the market, use:\n\`\`\`/market list item_id:${item.id} price:YOUR_PRICE\`\`\`\n\n💡 Recommended prices:\n• Mil-Spec: 50-200 coins\n• Restricted: 200-500 coins\n• Classified: 500-1500 coins\n• Covert: 1500-5000 coins\n• Knives: 5000+ coins`,
+          ephemeral: true
+        });
+      }
     });
 
     collector.on('end', async () => {

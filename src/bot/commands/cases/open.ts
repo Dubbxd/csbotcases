@@ -41,6 +41,19 @@ export default {
       // Don't defer - we'll reply immediately with animation
       
     try {
+      // Get case definition to show proper name
+      const caseDefinition = await prisma.caseDefinition.findUnique({
+        where: { id: caseId },
+      });
+
+      if (!caseDefinition) {
+        const embed = new EmbedBuilder()
+          .setTitle('❌ Case Not Found')
+          .setDescription('This case does not exist!')
+          .setColor(0xFF0000);
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+      }
+
       // Check if user has the case (with guild context)
       const userCase = await prisma.userCase.findFirst({
         where: {
@@ -50,10 +63,9 @@ export default {
       });
 
       if (!userCase) {
-        const caseNames = ['📦 Classic Case', '🔪 Knife Collection', '🎭 Agent Case'];
         const embed = new EmbedBuilder()
           .setTitle('❌ No Case Found')
-          .setDescription(`You don't have a **${caseNames[caseId - 1]}** to open!`)
+          .setDescription(`You don't have a **${caseDefinition.name}** to open!`)
           .setColor(0xFF0000)
           .addFields(
             { name: '🛒 How to get cases', value: '• Use `/shop` to view available cases\n• Use `/buy item:case_${caseId}` to purchase this case\n• Use `/daily` to earn coins' }
@@ -85,11 +97,10 @@ export default {
       }
 
       // Initial "Opening case..." message with animation
-      const caseNames = ['📦 Classic Case', '🔪 Knife Collection', '🎭 Agent Case'];
-      const caseEmojis = ['📦', '🔪', '🎭'];
+      const caseEmoji = caseDefinition.name.includes('Dreams') ? '🌙' : '🌈';
       
       const openingEmbed = new EmbedBuilder()
-        .setTitle(`${caseEmojis[caseId - 1]} Opening ${caseNames[caseId - 1]}...`)
+        .setTitle(`${caseEmoji} Opening ${caseDefinition.name}...`)
         .setDescription('🔄 **Spinning...**\n\n⚪⚪⚪⚪⚪⚪⚪')
         .setColor(0x808080)
         .setFooter({ text: '🎰 Good luck!' });
@@ -141,7 +152,7 @@ export default {
           const bars = Array(7).fill(currentRarity.emoji).join('');
           
           const spinEmbed = new EmbedBuilder()
-            .setTitle(`${caseEmojis[caseId - 1]} Opening ${caseNames[caseId - 1]}...`)
+            .setTitle(`${caseEmoji} Opening ${caseDefinition.name}...`)
             .setDescription(`🔄 **Spinning...**\n\n${bars}`)
             .setColor(currentRarity.color)
             .setFooter({ text: '🎰 Rolling through the possibilities...' });
@@ -183,7 +194,7 @@ export default {
       const finalBars = Array(7).fill(resultRarityColor.emoji).join('');
       
       const revealingEmbed = new EmbedBuilder()
-        .setTitle(`${caseEmojis[caseId - 1]} Opening ${caseNames[caseId - 1]}...`)
+        .setTitle(`${caseEmoji} Opening ${caseDefinition.name}...`)
         .setDescription(`✨ **Revealing...**\n\n${finalBars}`)
         .setColor(resultRarityColor.color)
         .setFooter({ text: '🎊 You got something!' });
@@ -202,7 +213,7 @@ export default {
       
       // Final reveal embed
       const finalEmbed = new EmbedBuilder()
-        .setTitle(`${caseEmojis[caseId - 1]} Case Opened!`)
+        .setTitle(`${caseEmoji} Case Opened!`)
         .setDescription(`**🎉 ${interaction.user.username} unboxed:**\n\n${rarityEmojis[result.item.rarity]} **${result.item.name}**`)
         .setColor(RARITY_CONFIG[result.item.rarity as keyof typeof RARITY_CONFIG].color);
       
@@ -219,7 +230,7 @@ export default {
       }
       
       finalEmbed.addFields(fields);
-      finalEmbed.setFooter({ text: `Use /inventory to see all your items | Opened: ${caseEmojis[caseId - 1]} ${caseNames[caseId - 1]}` });
+      finalEmbed.setFooter({ text: `Use /inventory to see all your items | Opened: ${caseEmoji} ${caseDefinition.name}` });
       finalEmbed.setTimestamp();
 
       // Add item image if available (should be loaded by now)

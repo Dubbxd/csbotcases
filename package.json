@@ -12,6 +12,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "deploy-commands": "tsx src/bot/deploy-commands.ts",
+    "seed": "tsx scripts/seedAll.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

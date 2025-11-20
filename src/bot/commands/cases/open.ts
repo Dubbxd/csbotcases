@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { caseService } from '../../../core/loot/caseService';
-import { RARITY_CONFIG, COLORS } from '../../../config/constants';
+import { RARITY_CONFIG, COLORS, getRarityDisplayName } from '../../../config/constants';
 import { EmbedHelper } from '../../utils/embeds';
 import { SteamImageFetcher } from '../../../core/scraper/steamImageFetcher';
 import { getSteamImageProxyUrl } from '../../../core/utils/imageProxy';
@@ -203,7 +203,7 @@ export default {
         .setDescription(`**🎉 ${interaction.user.username} unboxed:**\n\n${rarityEmojis[result.item.rarity]} **${result.item.name}**`)
         .setColor(RARITY_CONFIG[result.item.rarity as keyof typeof RARITY_CONFIG].color)
         .addFields(
-          { name: '✨ Rarity', value: result.item.rarity, inline: true },
+          { name: '✨ Rarity', value: getRarityDisplayName(result.item.rarity), inline: true },
           { name: '💰 Bonus Coins', value: `+${result.bonusCoins}`, inline: true },
           { name: '⭐ Bonus XP', value: `+${result.bonusXP}`, inline: true }
         )

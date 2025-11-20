@@ -16,15 +16,21 @@ export const XP_FORMULA = {
   },
 };
 
-// Rarities
+// Rarities (CS2 Accurate)
 export const RARITY_CONFIG = {
-  COMMON: { color: 0xb0c3d9, emoji: '⚪', name: 'Common' },
-  UNCOMMON: { color: 0x5e98d9, emoji: '🔵', name: 'Uncommon' },
-  RARE: { color: 0x4b69ff, emoji: '💙', name: 'Rare' },
-  VERY_RARE: { color: 0x8847ff, emoji: '💜', name: 'Very Rare' },
-  LEGENDARY: { color: 0xd32ce6, emoji: '🌟', name: 'Legendary' },
-  EXOTIC: { color: 0xeb4b4b, emoji: '🔴', name: 'Exotic' },
+  COMMON: { color: 0xb0c3d9, emoji: '⚪', name: 'Consumer Grade' },       // White/Gray (not in cases)
+  UNCOMMON: { color: 0x5e98d9, emoji: '🔵', name: 'Mil-Spec' },          // Light Blue (79.92%)
+  RARE: { color: 0x8847ff, emoji: '🟣', name: 'Restricted' },            // Purple (15.98%)
+  VERY_RARE: { color: 0xd32ce6, emoji: '🩷', name: 'Classified' },       // Pink (3.20%)
+  LEGENDARY: { color: 0xeb4b4b, emoji: '🔴', name: 'Covert' },           // Red (0.64%)
+  EXOTIC: { color: 0xffd700, emoji: '⭐', name: 'Exceedingly Rare' },    // Gold (0.26% - Knives!)
 };
+
+// Helper to get rarity display name
+export function getRarityDisplayName(rarity: string): string {
+  const config = RARITY_CONFIG[rarity as keyof typeof RARITY_CONFIG];
+  return config ? config.name : rarity;
+}
 
 // Drop Probabilities (default)
 export const DEFAULT_DROP_PROBABILITIES = {

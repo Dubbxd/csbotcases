@@ -109,20 +109,33 @@ async function seedCS2Cases() {
   // Create all items for Dreams & Nightmares
   console.log('  → Creating items...');
   
+  // Delete existing drop items first
+  await prisma.caseDropItem.deleteMany({
+    where: { caseId: dreamsCase.id },
+  });
+  
   for (const item of dreamsMilSpec) {
-    const itemDef = await prisma.itemDefinition.create({
-      data: {
+    // Check if item already exists
+    let itemDef = await prisma.itemDefinition.findFirst({
+      where: {
         name: `${item.weapon} | ${item.skin}`,
-        type: 'WEAPON' as ItemType,
-        rarity: 'UNCOMMON' as Rarity,
-        weapon: item.weapon,
-        skin: item.skin,
-        iconUrl: item.imageUrl,
-        description: `Mil-Spec (Blue) from Dreams & Nightmares case`,
-        
-        
       },
     });
+
+    // Create if doesn't exist
+    if (!itemDef) {
+      itemDef = await prisma.itemDefinition.create({
+        data: {
+          name: `${item.weapon} | ${item.skin}`,
+          type: 'WEAPON' as ItemType,
+          rarity: 'UNCOMMON' as Rarity,
+          weapon: item.weapon,
+          skin: item.skin,
+          iconUrl: item.imageUrl,
+          description: `Mil-Spec (Blue) from Dreams & Nightmares case`,
+        },
+      });
+    }
 
     await prisma.caseDropItem.create({
       data: {
@@ -135,19 +148,23 @@ async function seedCS2Cases() {
   }
 
   for (const item of dreamsRestricted) {
-    const itemDef = await prisma.itemDefinition.create({
-      data: {
-        name: `${item.weapon} | ${item.skin}`,
-        type: 'WEAPON' as ItemType,
-        rarity: 'UNCOMMON' as Rarity,
-        weapon: item.weapon,
-        skin: item.skin,
-        iconUrl: item.imageUrl,
-        description: `Restricted (Purple) from Dreams & Nightmares case`,
-        
-        
-      },
+    let itemDef = await prisma.itemDefinition.findFirst({
+      where: { name: `${item.weapon} | ${item.skin}` },
     });
+
+    if (!itemDef) {
+      itemDef = await prisma.itemDefinition.create({
+        data: {
+          name: `${item.weapon} | ${item.skin}`,
+          type: 'WEAPON' as ItemType,
+          rarity: 'UNCOMMON' as Rarity,
+          weapon: item.weapon,
+          skin: item.skin,
+          iconUrl: item.imageUrl,
+          description: `Restricted (Purple) from Dreams & Nightmares case`,
+        },
+      });
+    }
 
     await prisma.caseDropItem.create({
       data: {
@@ -160,19 +177,23 @@ async function seedCS2Cases() {
   }
 
   for (const item of dreamsClassified) {
-    const itemDef = await prisma.itemDefinition.create({
-      data: {
-        name: `${item.weapon} | ${item.skin}`,
-        type: 'WEAPON' as ItemType,
-        rarity: 'LEGENDARY' as Rarity,
-        weapon: item.weapon,
-        skin: item.skin,
-        iconUrl: item.imageUrl,
-        description: `Classified (Pink) from Dreams & Nightmares case`,
-        
-        
-      },
+    let itemDef = await prisma.itemDefinition.findFirst({
+      where: { name: `${item.weapon} | ${item.skin}` },
     });
+
+    if (!itemDef) {
+      itemDef = await prisma.itemDefinition.create({
+        data: {
+          name: `${item.weapon} | ${item.skin}`,
+          type: 'WEAPON' as ItemType,
+          rarity: 'LEGENDARY' as Rarity,
+          weapon: item.weapon,
+          skin: item.skin,
+          iconUrl: item.imageUrl,
+          description: `Classified (Pink) from Dreams & Nightmares case`,
+        },
+      });
+    }
 
     await prisma.caseDropItem.create({
       data: {
@@ -185,19 +206,23 @@ async function seedCS2Cases() {
   }
 
   for (const item of dreamsCovert) {
-    const itemDef = await prisma.itemDefinition.create({
-      data: {
-        name: `${item.weapon} | ${item.skin}`,
-        type: 'WEAPON' as ItemType,
-        rarity: 'LEGENDARY' as Rarity,
-        weapon: item.weapon,
-        skin: item.skin,
-        iconUrl: item.imageUrl,
-        description: `Covert (Red) from Dreams & Nightmares case`,
-        
-        
-      },
+    let itemDef = await prisma.itemDefinition.findFirst({
+      where: { name: `${item.weapon} | ${item.skin}` },
     });
+
+    if (!itemDef) {
+      itemDef = await prisma.itemDefinition.create({
+        data: {
+          name: `${item.weapon} | ${item.skin}`,
+          type: 'WEAPON' as ItemType,
+          rarity: 'LEGENDARY' as Rarity,
+          weapon: item.weapon,
+          skin: item.skin,
+          iconUrl: item.imageUrl,
+          description: `Covert (Red) from Dreams & Nightmares case`,
+        },
+      });
+    }
 
     await prisma.caseDropItem.create({
       data: {
@@ -218,19 +243,23 @@ async function seedCS2Cases() {
   ];
 
   for (const knife of knives) {
-    const itemDef = await prisma.itemDefinition.create({
-      data: {
-        name: `★ ${knife.name} | ${knife.skin}`,
-        type: 'WEAPON' as ItemType,
-        rarity: 'EXOTIC' as Rarity,
-        weapon: knife.name,
-        skin: knife.skin,
-        iconUrl: knife.imageUrl,
-        description: `★ Rare Special Item from Dreams & Nightmares case`,
-        
-        
-      },
+    let itemDef = await prisma.itemDefinition.findFirst({
+      where: { name: `★ ${knife.name} | ${knife.skin}` },
     });
+
+    if (!itemDef) {
+      itemDef = await prisma.itemDefinition.create({
+        data: {
+          name: `★ ${knife.name} | ${knife.skin}`,
+          type: 'WEAPON' as ItemType,
+          rarity: 'EXOTIC' as Rarity,
+          weapon: knife.name,
+          skin: knife.skin,
+          iconUrl: knife.imageUrl,
+          description: `★ Rare Special Item from Dreams & Nightmares case`,
+        },
+      });
+    }
 
     await prisma.caseDropItem.create({
       data: {
@@ -303,20 +332,29 @@ async function seedCS2Cases() {
     { weapon: 'Five-SeveN', skin: 'Hyper Beast', imageUrl: 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgposLOzLhRlxfbGTj5X09q_goWYkuHxPYTck29Y_chOhujT8om7ilG1rkE4MjzwcNeSJAE2YQ3ZqwTqxOvm08W_vcvBn3pnvD5iuyj9PgdEAQ/256fx256f' },
   ];
 
+  // Delete existing drop items first
+  await prisma.caseDropItem.deleteMany({
+    where: { caseId: chromaCase.id },
+  });
+
   for (const item of chromaMilSpec) {
-    const itemDef = await prisma.itemDefinition.create({
-      data: {
-        name: `${item.weapon} | ${item.skin}`,
-        type: 'WEAPON' as ItemType,
-        rarity: 'UNCOMMON' as Rarity,
-        weapon: item.weapon,
-        skin: item.skin,
-        iconUrl: item.imageUrl,
-        description: `Mil-Spec (Blue) from Chroma 3 case`,
-        
-        
-      },
+    let itemDef = await prisma.itemDefinition.findFirst({
+      where: { name: `${item.weapon} | ${item.skin}` },
     });
+
+    if (!itemDef) {
+      itemDef = await prisma.itemDefinition.create({
+        data: {
+          name: `${item.weapon} | ${item.skin}`,
+          type: 'WEAPON' as ItemType,
+          rarity: 'UNCOMMON' as Rarity,
+          weapon: item.weapon,
+          skin: item.skin,
+          iconUrl: item.imageUrl,
+          description: `Mil-Spec (Blue) from Chroma 3 case`,
+        },
+      });
+    }
 
     await prisma.caseDropItem.create({
       data: {
@@ -329,19 +367,23 @@ async function seedCS2Cases() {
   }
 
   for (const item of chromaRestricted) {
-    const itemDef = await prisma.itemDefinition.create({
-      data: {
-        name: `${item.weapon} | ${item.skin}`,
-        type: 'WEAPON' as ItemType,
-        rarity: 'UNCOMMON' as Rarity,
-        weapon: item.weapon,
-        skin: item.skin,
-        iconUrl: item.imageUrl,
-        description: `Restricted (Purple) from Chroma 3 case`,
-        
-        
-      },
+    let itemDef = await prisma.itemDefinition.findFirst({
+      where: { name: `${item.weapon} | ${item.skin}` },
     });
+
+    if (!itemDef) {
+      itemDef = await prisma.itemDefinition.create({
+        data: {
+          name: `${item.weapon} | ${item.skin}`,
+          type: 'WEAPON' as ItemType,
+          rarity: 'UNCOMMON' as Rarity,
+          weapon: item.weapon,
+          skin: item.skin,
+          iconUrl: item.imageUrl,
+          description: `Restricted (Purple) from Chroma 3 case`,
+        },
+      });
+    }
 
     await prisma.caseDropItem.create({
       data: {
@@ -354,19 +396,23 @@ async function seedCS2Cases() {
   }
 
   for (const item of chromaClassified) {
-    const itemDef = await prisma.itemDefinition.create({
-      data: {
-        name: `${item.weapon} | ${item.skin}`,
-        type: 'WEAPON' as ItemType,
-        rarity: 'LEGENDARY' as Rarity,
-        weapon: item.weapon,
-        skin: item.skin,
-        iconUrl: item.imageUrl,
-        description: `Classified (Pink) from Chroma 3 case`,
-        
-        
-      },
+    let itemDef = await prisma.itemDefinition.findFirst({
+      where: { name: `${item.weapon} | ${item.skin}` },
     });
+
+    if (!itemDef) {
+      itemDef = await prisma.itemDefinition.create({
+        data: {
+          name: `${item.weapon} | ${item.skin}`,
+          type: 'WEAPON' as ItemType,
+          rarity: 'LEGENDARY' as Rarity,
+          weapon: item.weapon,
+          skin: item.skin,
+          iconUrl: item.imageUrl,
+          description: `Classified (Pink) from Chroma 3 case`,
+        },
+      });
+    }
 
     await prisma.caseDropItem.create({
       data: {
@@ -379,19 +425,23 @@ async function seedCS2Cases() {
   }
 
   for (const item of chromaCovert) {
-    const itemDef = await prisma.itemDefinition.create({
-      data: {
-        name: `${item.weapon} | ${item.skin}`,
-        type: 'WEAPON' as ItemType,
-        rarity: 'LEGENDARY' as Rarity,
-        weapon: item.weapon,
-        skin: item.skin,
-        iconUrl: item.imageUrl,
-        description: `Covert (Red) from Chroma 3 case`,
-        
-        
-      },
+    let itemDef = await prisma.itemDefinition.findFirst({
+      where: { name: `${item.weapon} | ${item.skin}` },
     });
+
+    if (!itemDef) {
+      itemDef = await prisma.itemDefinition.create({
+        data: {
+          name: `${item.weapon} | ${item.skin}`,
+          type: 'WEAPON' as ItemType,
+          rarity: 'LEGENDARY' as Rarity,
+          weapon: item.weapon,
+          skin: item.skin,
+          iconUrl: item.imageUrl,
+          description: `Covert (Red) from Chroma 3 case`,
+        },
+      });
+    }
 
     await prisma.caseDropItem.create({
       data: {
@@ -411,19 +461,23 @@ async function seedCS2Cases() {
   ];
 
   for (const knife of chromaKnives) {
-    const itemDef = await prisma.itemDefinition.create({
-      data: {
-        name: `★ ${knife.name} | ${knife.skin}`,
-        type: 'WEAPON' as ItemType,
-        rarity: 'EXOTIC' as Rarity,
-        weapon: knife.name,
-        skin: knife.skin,
-        iconUrl: knife.imageUrl,
-        description: `★ Rare Special Item from Chroma 3 case`,
-        
-        
-      },
+    let itemDef = await prisma.itemDefinition.findFirst({
+      where: { name: `★ ${knife.name} | ${knife.skin}` },
     });
+
+    if (!itemDef) {
+      itemDef = await prisma.itemDefinition.create({
+        data: {
+          name: `★ ${knife.name} | ${knife.skin}`,
+          type: 'WEAPON' as ItemType,
+          rarity: 'EXOTIC' as Rarity,
+          weapon: knife.name,
+          skin: knife.skin,
+          iconUrl: knife.imageUrl,
+          description: `★ Rare Special Item from Chroma 3 case`,
+        },
+      });
+    }
 
     await prisma.caseDropItem.create({
       data: {

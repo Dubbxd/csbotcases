@@ -26,12 +26,12 @@ export default {
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
+
     const itemChoice = interaction.options.getString('item', true);
     const amount = interaction.options.getInteger('amount') || 1;
     const userId = interaction.user.id;
     const guildId = interaction.guildId!;
-
-    await interaction.deferReply();
 
     try {
       // Parse item choice

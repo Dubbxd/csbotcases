@@ -85,8 +85,11 @@ export default {
     let currentPage = 0;
     const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
 
-    const generateEmbed = (page: number) => {
-      const embed = new EmbedBuilder()
+    const generateEmbeds = (page: number) => {
+      const embeds: EmbedBuilder[] = [];
+      
+      // Main inventory embed
+      const mainEmbed = new EmbedBuilder()
         .setTitle(`📦 ${interaction.user.username}'s Inventory`)
         .setColor(0x5865F2)
         .setThumbnail(interaction.user.displayAvatarURL());
@@ -106,7 +109,7 @@ export default {
           })
           .join('\n');
         
-        embed.addFields({
+        mainEmbed.addFields({
           name: `📦 Cases (${cases.length} total)`,
           value: casesList,
           inline: false,
@@ -125,57 +128,64 @@ export default {
           .map(([name, count]) => `🔑 **${name}** x${count}`)
           .join('\n');
         
-        embed.addFields({
+        mainEmbed.addFields({
           name: `🔑 Keys (${keys.length} total)`,
           value: keysList,
           inline: false,
         });
       }
 
-      // Add items section with images
+      // Add items section
       if (items.length > 0) {
         const start = page * ITEMS_PER_PAGE;
         const end = start + ITEMS_PER_PAGE;
         const pageItems = items.slice(start, end);
 
-        // Show each item with its details
+        mainEmbed.addFields({
+          name: '✨ Your Items',
+          value: `📊 Showing ${start + 1}-${Math.min(end, items.length)} of ${items.length} items${rarityFilter ? ` (Filtered: ${getRarityDisplayName(rarityFilter)})` : ''}`,
+          inline: false,
+        });
+
+        mainEmbed.setFooter({ 
+          text: `Page ${page + 1}/${totalPages} | 💡 Select an item to inspect or sell` 
+        });
+
+        embeds.push(mainEmbed);
+
+        // Create individual embeds for each item with their images
         pageItems.forEach((item, index) => {
           const config = RARITY_CONFIG[item.itemDef.rarity as keyof typeof RARITY_CONFIG];
           const rarityName = getRarityDisplayName(item.itemDef.rarity);
           const itemNumber = start + index + 1;
           
-          // Add field for each item
-          embed.addFields({
-            name: `${config?.emoji || '⚪'} ${itemNumber}. ${item.itemDef.name}`,
-            value: `**Rarity:** ${rarityName}\n**ID:** \`${item.id}\`\n**Status:** ${item.inMarket ? '🏪 Listed on Market' : '✅ Available'}`,
-            inline: true,
-          });
-        });
+          const itemEmbed = new EmbedBuilder()
+            .setColor(config?.color || 0x5865F2)
+            .setTitle(`${config?.emoji || '⚪'} ${itemNumber}. ${item.itemDef.name}`)
+            .addFields(
+              { name: '🎨 Rarity', value: rarityName, inline: true },
+              { name: '🆔 Item ID', value: `\`${item.id}\``, inline: true },
+              { name: '💼 Status', value: item.inMarket ? '🏪 Listed on Market' : '✅ Available', inline: true }
+            );
 
-        // Add images as thumbnails for the first item
-        if (pageItems.length > 0 && pageItems[0].itemDef.iconUrl) {
-          const proxiedUrl = getSteamImageProxyUrl(pageItems[0].itemDef.iconUrl);
-          if (proxiedUrl) {
-            embed.setImage(proxiedUrl);
+          // Add image if available
+          if (item.itemDef.iconUrl) {
+            const proxiedUrl = getSteamImageProxyUrl(item.itemDef.iconUrl);
+            if (proxiedUrl) {
+              itemEmbed.setThumbnail(proxiedUrl);
+            }
           }
-        }
 
-        embed.addFields({
-          name: '\u200b',
-          value: `📊 Showing ${start + 1}-${Math.min(end, items.length)} of ${items.length} items${rarityFilter ? ` (Filtered: ${getRarityDisplayName(rarityFilter)})` : ''}`,
-          inline: false,
-        });
-
-        embed.setFooter({ 
-          text: `Page ${page + 1}/${totalPages} | 💡 Select an item to inspect or sell` 
+          embeds.push(itemEmbed);
         });
       } else {
-        embed.setFooter({ 
+        mainEmbed.setFooter({ 
           text: `💡 Use /open to open cases | Use /shop to buy more` 
         });
+        embeds.push(mainEmbed);
       }
 
-      return embed;
+      return embeds;
     };
 
     const generateButtons = (page: number) => {
@@ -250,11 +260,11 @@ export default {
     };
 
     // Send initial message
-    const initialEmbed = generateEmbed(currentPage);
+    const initialEmbeds = generateEmbeds(currentPage);
     const components = items.length > 0 ? generateButtons(currentPage) : [];
     
     const message = await interaction.editReply({ 
-      embeds: [initialEmbed],
+      embeds: initialEmbeds,
       components,
     });
 
@@ -273,25 +283,25 @@ export default {
       if (buttonInteraction.customId === 'first') {
         currentPage = 0;
         await buttonInteraction.update({
-          embeds: [generateEmbed(currentPage)],
+          embeds: generateEmbeds(currentPage),
           components: generateButtons(currentPage),
         });
       } else if (buttonInteraction.customId === 'prev') {
         currentPage = Math.max(0, currentPage - 1);
         await buttonInteraction.update({
-          embeds: [generateEmbed(currentPage)],
+          embeds: generateEmbeds(currentPage),
           components: generateButtons(currentPage),
         });
       } else if (buttonInteraction.customId === 'next') {
         currentPage = Math.min(totalPages - 1, currentPage + 1);
         await buttonInteraction.update({
-          embeds: [generateEmbed(currentPage)],
+          embeds: generateEmbeds(currentPage),
           components: generateButtons(currentPage),
         });
       } else if (buttonInteraction.customId === 'last') {
         currentPage = totalPages - 1;
         await buttonInteraction.update({
-          embeds: [generateEmbed(currentPage)],
+          embeds: generateEmbeds(currentPage),
           components: generateButtons(currentPage),
         });
       } 

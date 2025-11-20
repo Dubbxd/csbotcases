@@ -81,11 +81,11 @@ export default {
           },
         });
 
-        // Give 2 Classic Cases
+        // Give 2 Cases (1 of each type)
         await tx.userCase.createMany({
           data: [
-            { ownerId: userId, guildId, caseId: 1 },
-            { ownerId: userId, guildId, caseId: 1 },
+            { ownerId: userId, guildId, caseId: 1 }, // Dreams & Nightmares
+            { ownerId: userId, guildId, caseId: 2 }, // Chroma 3
           ],
         });
 
@@ -105,7 +105,7 @@ export default {
         .setThumbnail(interaction.user.displayAvatarURL())
         .addFields(
           { name: '💰 Coins', value: '1000 coins', inline: true },
-          { name: '🌙 Cases', value: '2x Dreams & Nightmares Case', inline: true },
+          { name: '📦 Cases', value: '1x 🌙 Dreams & Nightmares\n1x 🌈 Chroma 3', inline: true },
           { name: '🔑 Keys', value: '2x Universal Key', inline: true }
         )
         .addFields({

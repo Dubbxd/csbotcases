@@ -104,9 +104,12 @@ export default {
 
         // Case
         if (config.levelUpRewardType === 'case' || config.levelUpRewardType === 'both') {
-          // Give classic case (ID 1)
-          await caseService.grantCase(message.author.id, message.guild.id, 1);
-          rewards.push('📦 **Classic Case**');
+          // Give random case (ID 1 or 2)
+          const randomCaseId = Math.random() < 0.5 ? 1 : 2;
+          const caseName = randomCaseId === 1 ? 'Dreams & Nightmares Case' : 'Chroma 3 Case';
+          const caseEmoji = randomCaseId === 1 ? '🌙' : '🌈';
+          await caseService.grantCase(message.author.id, message.guild.id, randomCaseId);
+          rewards.push(`${caseEmoji} **${caseName}**`);
         }
 
         // Send level up message

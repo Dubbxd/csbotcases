@@ -289,8 +289,12 @@ export default {
             if (proxiedUrl) {
               inspectEmbed.setImage(proxiedUrl);
             } else {
-              // Fallback to original URL if proxy fails
-              inspectEmbed.setImage(item.itemDef.iconUrl);
+              // Fallback: clean Steam URL (remove size parameters)
+              let cleanUrl = item.itemDef.iconUrl;
+              if (cleanUrl.includes('/256fx256f')) {
+                cleanUrl = cleanUrl.replace('/256fx256f', '');
+              }
+              inspectEmbed.setImage(cleanUrl);
             }
           }
 

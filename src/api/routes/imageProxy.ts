@@ -25,7 +25,17 @@ router.get('/', async (req: Request, res: Response) => {
     // Try fetching the image with the original URL first
     let response;
     try {
-      response = await axios.get(imageUrl, {
+      // First, check if URL has size parameters and remove them preemptively
+      let cleanUrl = imageUrl;
+      if (cleanUrl.includes('/256fx256f')) {
+        cleanUrl = cleanUrl.replace('/256fx256f', '');
+      } else if (cleanUrl.includes('/512fx512f')) {
+        cleanUrl = cleanUrl.replace('/512fx512f', '');
+      } else if (cleanUrl.includes('/360fx360f')) {
+        cleanUrl = cleanUrl.replace('/360fx360f', '');
+      }
+
+      response = await axios.get(cleanUrl, {
         responseType: 'arraybuffer',
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -35,21 +45,7 @@ router.get('/', async (req: Request, res: Response) => {
         validateStatus: (status) => status === 200,
       });
     } catch (error: any) {
-      // If it fails with 404 and has size parameter, try without it
-      if (error.response?.status === 404 && imageUrl.includes('/256fx256f')) {
-        console.log('Retrying without size parameter...');
-        imageUrl = imageUrl.replace('/256fx256f', '');
-        response = await axios.get(imageUrl, {
-          responseType: 'arraybuffer',
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
-          },
-          timeout: 10000,
-        });
-      } else {
-        throw error;
-      }
+      throw error;
     }
 
     // Get the content type

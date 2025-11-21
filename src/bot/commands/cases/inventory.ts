@@ -288,13 +288,6 @@ export default {
             const proxiedUrl = getSteamImageProxyUrl(item.itemDef.iconUrl);
             if (proxiedUrl) {
               inspectEmbed.setImage(proxiedUrl);
-            } else {
-              // Fallback: clean Steam URL (remove size parameters)
-              let cleanUrl = item.itemDef.iconUrl;
-              if (cleanUrl.includes('/256fx256f')) {
-                cleanUrl = cleanUrl.replace('/256fx256f', '');
-              }
-              inspectEmbed.setImage(cleanUrl);
             }
           }
 

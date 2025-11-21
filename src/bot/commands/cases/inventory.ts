@@ -269,7 +269,6 @@ export default {
         if (item) {
           const config = RARITY_CONFIG[item.itemDef.rarity as keyof typeof RARITY_CONFIG];
           const rarityName = getRarityDisplayName(item.itemDef.rarity);
-          const proxiedUrl = getSteamImageProxyUrl(item.itemDef.iconUrl);
           
           const inspectEmbed = new EmbedBuilder()
             .setTitle(`${config?.emoji || '⚪'} ${item.itemDef.name}`)
@@ -284,8 +283,15 @@ export default {
               { name: '💼 Status', value: item.inMarket ? '🏪 Listed on Market' : '✅ In Inventory', inline: true }
             );
           
-          if (proxiedUrl) {
-            inspectEmbed.setImage(proxiedUrl);
+          // Add item image if available
+          if (item.itemDef.iconUrl) {
+            const proxiedUrl = getSteamImageProxyUrl(item.itemDef.iconUrl);
+            if (proxiedUrl) {
+              inspectEmbed.setImage(proxiedUrl);
+            } else {
+              // Fallback to original URL if proxy fails
+              inspectEmbed.setImage(item.itemDef.iconUrl);
+            }
           }
 
           // Calculate burn value

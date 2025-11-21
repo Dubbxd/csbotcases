@@ -87,7 +87,7 @@ export default {
     let currentPage = 0;
     const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
 
-    const generateEmbeds = async (page: number) => {
+    const generateEmbeds = (page: number) => {
       const start = page * ITEMS_PER_PAGE;
       const end = start + ITEMS_PER_PAGE;
       const pageItems = items.slice(start, end);
@@ -140,21 +140,7 @@ export default {
           });
         });
 
-        // Show image of the first item on the page - fetch from Steam Market API
-        if (pageItems[0]) {
-          try {
-            const steamItem = await searchSteamItem(pageItems[0].itemDef.name, 1);
-            if (steamItem?.imageUrl) {
-              const proxiedUrl = getSteamImageProxyUrl(steamItem.imageUrl);
-              if (proxiedUrl) {
-                mainEmbed.setImage(proxiedUrl);
-              }
-            }
-          } catch (error) {
-            // Silently fail if image can't be loaded
-          }
-        }
-
+        // No image in main inventory - only in inspect view
         mainEmbed.setFooter({ 
           text: `Page ${page + 1}/${totalPages} • ${items.length} items total • Click 🔍 to inspect` 
         });
@@ -224,7 +210,7 @@ export default {
     };
 
     // Send initial message
-    const initialEmbeds = await generateEmbeds(currentPage);
+    const initialEmbeds = generateEmbeds(currentPage);
     const components = items.length > 0 ? generateButtons(currentPage) : [];
     
     const message = await interaction.editReply({ 
@@ -247,25 +233,25 @@ export default {
       if (buttonInteraction.customId === 'first') {
         currentPage = 0;
         await buttonInteraction.update({
-          embeds: await generateEmbeds(currentPage),
+          embeds: generateEmbeds(currentPage),
           components: generateButtons(currentPage),
         });
       } else if (buttonInteraction.customId === 'prev') {
         currentPage = Math.max(0, currentPage - 1);
         await buttonInteraction.update({
-          embeds: await generateEmbeds(currentPage),
+          embeds: generateEmbeds(currentPage),
           components: generateButtons(currentPage),
         });
       } else if (buttonInteraction.customId === 'next') {
         currentPage = Math.min(totalPages - 1, currentPage + 1);
         await buttonInteraction.update({
-          embeds: await generateEmbeds(currentPage),
+          embeds: generateEmbeds(currentPage),
           components: generateButtons(currentPage),
         });
       } else if (buttonInteraction.customId === 'last') {
         currentPage = totalPages - 1;
         await buttonInteraction.update({
-          embeds: await generateEmbeds(currentPage),
+          embeds: generateEmbeds(currentPage),
           components: generateButtons(currentPage),
         });
       } 
@@ -413,10 +399,10 @@ export default {
                     });
 
                     // Refresh the main inventory view
-                    setTimeout(async () => {
+                    setTimeout(() => {
                       interaction.editReply({ 
                         content: '🔄 Inventory updated! Use /inventory to see changes.',
-                        embeds: await generateEmbeds(currentPage),
+                        embeds: generateEmbeds(currentPage),
                         components: generateButtons(currentPage)
                       });
                     }, 1000);

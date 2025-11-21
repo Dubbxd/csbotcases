@@ -13,6 +13,7 @@ import { Pagination } from '../../utils/pagination';
 import { RARITY_CONFIG, getRarityDisplayName } from '../../../config/constants';
 import prisma from '../../../db/client';
 import { getSteamImageProxyUrl } from '../../../core/utils/imageProxy';
+import { burnItem, calculateBurnValue, getWearCondition } from '../../../core/economy/burnService';
 
 export default {
   data: new SlashCommandBuilder()
@@ -287,19 +288,27 @@ export default {
             inspectEmbed.setImage(proxiedUrl);
           }
 
-          // Create Sell button
-          const sellButton = new ActionRowBuilder<ButtonBuilder>()
+          // Calculate burn value
+          const burnValue = calculateBurnValue(item.itemDef.rarity);
+
+          // Create action buttons row
+          const actionButtons = new ActionRowBuilder<ButtonBuilder>()
             .addComponents(
               new ButtonBuilder()
                 .setCustomId(`sell_${item.id}`)
                 .setLabel(item.inMarket ? '🏪 Already Listed' : '💰 Sell on Market')
-                .setStyle(item.inMarket ? ButtonStyle.Danger : ButtonStyle.Success)
-                .setDisabled(item.inMarket)
+                .setStyle(item.inMarket ? ButtonStyle.Secondary : ButtonStyle.Success)
+                .setDisabled(item.inMarket),
+              new ButtonBuilder()
+                .setCustomId(`burn_${item.id}`)
+                .setLabel(`🔥 Burn for ${burnValue} coins`)
+                .setStyle(ButtonStyle.Danger)
+                .setDisabled(item.inMarket || item.locked)
             );
           
           await buttonInteraction.reply({ 
             embeds: [inspectEmbed], 
-            components: [sellButton],
+            components: [actionButtons],
             ephemeral: true 
           });
 
@@ -308,10 +317,108 @@ export default {
           const sellCollector = inspectMessage.createMessageComponentCollector({
             componentType: ComponentType.Button,
             time: 2 * 60 * 1000, // 2 minutes
-            filter: (i) => i.user.id === userId && i.customId.startsWith('sell_'),
+            filter: (i) => i.user.id === userId && (i.customId.startsWith('sell_') || i.customId.startsWith('burn_')),
           });
 
           sellCollector.on('collect', async (sellInteraction) => {
+            // Handle Burn action
+            if (sellInteraction.customId.startsWith('burn_')) {
+              const burnItemId = parseInt(sellInteraction.customId.replace('burn_', ''));
+              const burnItemData = items.find(i => i.id === burnItemId);
+              
+              if (!burnItemData) {
+                await sellInteraction.reply({ content: '❌ Item not found!', ephemeral: true });
+                return;
+              }
+
+              if (burnItemData.inMarket) {
+                await sellInteraction.reply({ content: '❌ Cannot burn items listed on the market!', ephemeral: true });
+                return;
+              }
+
+              if (burnItemData.locked) {
+                await sellInteraction.reply({ content: '❌ This item is locked!', ephemeral: true });
+                return;
+              }
+
+              // Show confirmation
+              const burnValue = calculateBurnValue(burnItemData.itemDef.rarity);
+              const confirmEmbed = new EmbedBuilder()
+                .setTitle('🔥 Confirm Burn')
+                .setDescription(`Are you sure you want to burn **${burnItemData.itemDef.name}**?\n\n💰 You will receive: **${burnValue} coins**\n\n⚠️ **This action cannot be undone!**`)
+                .setColor(0xFF4444)
+                .setFooter({ text: 'Click Confirm to burn this item permanently' });
+
+              const confirmRow = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(
+                  new ButtonBuilder()
+                    .setCustomId(`confirm_burn_${burnItemId}`)
+                    .setLabel('✅ Confirm Burn')
+                    .setStyle(ButtonStyle.Danger),
+                  new ButtonBuilder()
+                    .setCustomId(`cancel_burn_${burnItemId}`)
+                    .setLabel('❌ Cancel')
+                    .setStyle(ButtonStyle.Secondary)
+                );
+
+              await sellInteraction.reply({
+                embeds: [confirmEmbed],
+                components: [confirmRow],
+                ephemeral: true
+              });
+
+              // Collector for confirmation
+              const confirmMessage = await sellInteraction.fetchReply();
+              const confirmCollector = confirmMessage.createMessageComponentCollector({
+                componentType: ComponentType.Button,
+                time: 30 * 1000, // 30 seconds
+                filter: (i) => i.user.id === userId,
+              });
+
+              confirmCollector.on('collect', async (confirmInteraction) => {
+                if (confirmInteraction.customId.startsWith('confirm_burn_')) {
+                  const result = await burnItem(userId, guildId, burnItemId);
+                  
+                  if (result.success) {
+                    const successEmbed = new EmbedBuilder()
+                      .setTitle('🔥 Item Burned!')
+                      .setDescription(`You burned **${burnItemData.itemDef.name}** and received **${result.coins} coins**!`)
+                      .setColor(0x57F287)
+                      .setFooter({ text: 'The item has been permanently destroyed' });
+
+                    await confirmInteraction.update({
+                      embeds: [successEmbed],
+                      components: []
+                    });
+
+                    // Refresh the main inventory view
+                    setTimeout(() => {
+                      interaction.editReply({ 
+                        content: '🔄 Inventory updated! Use /inventory to see changes.',
+                        embeds: generateEmbeds(currentPage),
+                        components: generateButtons(currentPage)
+                      });
+                    }, 1000);
+                  } else {
+                    await confirmInteraction.update({
+                      content: `❌ Error: ${result.error}`,
+                      embeds: [],
+                      components: []
+                    });
+                  }
+                } else if (confirmInteraction.customId.startsWith('cancel_burn_')) {
+                  await confirmInteraction.update({
+                    content: '❌ Burn cancelled.',
+                    embeds: [],
+                    components: []
+                  });
+                }
+              });
+
+              return;
+            }
+
+            // Handle Sell action (existing code)
             const sellItemId = parseInt(sellInteraction.customId.replace('sell_', ''));
             const sellItem = items.find(i => i.id === sellItemId);
             

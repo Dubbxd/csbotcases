@@ -5,6 +5,8 @@ import logger from './bot/utils/logger';
 // Import API server
 import { startAPIServer } from './api/server';
 
+// Build: v2.1.0 - Image proxy improvements
+
 async function main() {
   try {
     logger.info('Starting CS:GO Discord Bot...');

@@ -50,7 +50,20 @@ router.get('/', async (req: Request, res: Response) => {
     console.error('URL attempted:', req.query.url);
     
     if (error.response?.status === 404) {
-      return res.status(404).json({ error: 'Image not found on Steam CDN' });
+      // Return a 1x1 transparent PNG as fallback instead of error
+      // This prevents Discord from showing broken image icons
+      const transparentPng = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        'base64'
+      );
+      
+      res.set({
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=3600',
+        'Access-Control-Allow-Origin': '*',
+      });
+      
+      return res.send(transparentPng);
     }
     
     res.status(500).json({ error: 'Failed to fetch image' });

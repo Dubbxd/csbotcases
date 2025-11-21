@@ -14,6 +14,7 @@ import { RARITY_CONFIG, getRarityDisplayName } from '../../../config/constants';
 import prisma from '../../../db/client';
 import { getSteamImageProxyUrl } from '../../../core/utils/imageProxy';
 import { burnItem, calculateBurnValue, getWearCondition } from '../../../core/economy/burnService';
+import { searchSteamItem } from '../../../core/scraper/steamMarketClient';
 
 export default {
   data: new SlashCommandBuilder()
@@ -86,7 +87,7 @@ export default {
     let currentPage = 0;
     const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
 
-    const generateEmbeds = (page: number) => {
+    const generateEmbeds = async (page: number) => {
       const start = page * ITEMS_PER_PAGE;
       const end = start + ITEMS_PER_PAGE;
       const pageItems = items.slice(start, end);
@@ -139,11 +140,18 @@ export default {
           });
         });
 
-        // Show image of the first item on the page
-        if (pageItems[0]?.itemDef.iconUrl) {
-          const proxiedUrl = getSteamImageProxyUrl(pageItems[0].itemDef.iconUrl);
-          if (proxiedUrl) {
-            mainEmbed.setImage(proxiedUrl);
+        // Show image of the first item on the page - fetch from Steam Market API
+        if (pageItems[0]) {
+          try {
+            const steamItem = await searchSteamItem(pageItems[0].itemDef.name, 1);
+            if (steamItem?.imageUrl) {
+              const proxiedUrl = getSteamImageProxyUrl(steamItem.imageUrl);
+              if (proxiedUrl) {
+                mainEmbed.setImage(proxiedUrl);
+              }
+            }
+          } catch (error) {
+            // Silently fail if image can't be loaded
           }
         }
 
@@ -216,7 +224,7 @@ export default {
     };
 
     // Send initial message
-    const initialEmbeds = generateEmbeds(currentPage);
+    const initialEmbeds = await generateEmbeds(currentPage);
     const components = items.length > 0 ? generateButtons(currentPage) : [];
     
     const message = await interaction.editReply({ 
@@ -239,25 +247,25 @@ export default {
       if (buttonInteraction.customId === 'first') {
         currentPage = 0;
         await buttonInteraction.update({
-          embeds: generateEmbeds(currentPage),
+          embeds: await generateEmbeds(currentPage),
           components: generateButtons(currentPage),
         });
       } else if (buttonInteraction.customId === 'prev') {
         currentPage = Math.max(0, currentPage - 1);
         await buttonInteraction.update({
-          embeds: generateEmbeds(currentPage),
+          embeds: await generateEmbeds(currentPage),
           components: generateButtons(currentPage),
         });
       } else if (buttonInteraction.customId === 'next') {
         currentPage = Math.min(totalPages - 1, currentPage + 1);
         await buttonInteraction.update({
-          embeds: generateEmbeds(currentPage),
+          embeds: await generateEmbeds(currentPage),
           components: generateButtons(currentPage),
         });
       } else if (buttonInteraction.customId === 'last') {
         currentPage = totalPages - 1;
         await buttonInteraction.update({
-          embeds: generateEmbeds(currentPage),
+          embeds: await generateEmbeds(currentPage),
           components: generateButtons(currentPage),
         });
       } 
@@ -283,12 +291,22 @@ export default {
               { name: '💼 Status', value: item.inMarket ? '🏪 Listed on Market' : '✅ In Inventory', inline: true }
             );
           
-          // Add item image if available
-          if (item.itemDef.iconUrl) {
-            const proxiedUrl = getSteamImageProxyUrl(item.itemDef.iconUrl);
-            if (proxiedUrl) {
-              inspectEmbed.setImage(proxiedUrl);
+          // Add item image - fetch from Steam Market API for correct URL
+          try {
+            console.log(`🔍 Fetching Steam image for: ${item.itemDef.name}`);
+            const steamItem = await searchSteamItem(item.itemDef.name, 1); // 1 = USD
+            
+            if (steamItem?.imageUrl) {
+              const proxiedUrl = getSteamImageProxyUrl(steamItem.imageUrl);
+              if (proxiedUrl) {
+                inspectEmbed.setImage(proxiedUrl);
+                console.log(`✅ Image loaded: ${steamItem.imageUrl}`);
+              }
+            } else {
+              console.log(`⚠️ No image found on Steam Market for ${item.itemDef.name}`);
             }
+          } catch (error) {
+            console.error('Error fetching Steam image:', error);
           }
 
           // Calculate burn value
@@ -395,10 +413,10 @@ export default {
                     });
 
                     // Refresh the main inventory view
-                    setTimeout(() => {
+                    setTimeout(async () => {
                       interaction.editReply({ 
                         content: '🔄 Inventory updated! Use /inventory to see changes.',
-                        embeds: generateEmbeds(currentPage),
+                        embeds: await generateEmbeds(currentPage),
                         components: generateButtons(currentPage)
                       });
                     }, 1000);

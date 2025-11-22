@@ -148,23 +148,23 @@ export default {
 
       const carousel = createCarousel();
       
-      // Ultra-smooth CS:GO carousel with constant item rotation
-      // Generate more items than needed and rotate through them rapidly
-      const totalFrames = 40; // Reduced for faster Discord updates
+      // CS:GO authentic timing: ~5.5 seconds total
+      // Fast start, smooth exponential deceleration, dramatic finish
+      const totalFrames = 35; // Optimized for CS:GO timing
       const animationFrames = [];
-      let currentDelay = 80;  // Start at 80ms for rapid updates
-      const slowdownRate = 1.12; // Faster exponential growth
+      let currentDelay = 70;  // Start fast like CS:GO
+      const slowdownRate = 1.15; // CS:GO-like deceleration curve
       
       for (let i = 0; i < totalFrames; i++) {
         let status = '🔄 **Spinning...**';
         
-        if (i > 32) {
+        if (i > 28) {
           status = '🔮 **Revealing...**';
-        } else if (i > 25) {
+        } else if (i > 22) {
           status = '⏳ **Almost there...**';
-        } else if (i > 18) {
+        } else if (i > 15) {
           status = '🎲 **Slowing down...**';
-        } else if (i > 10) {
+        } else if (i > 8) {
           status = '🎰 **Rolling...**';
         }
         
@@ -174,31 +174,31 @@ export default {
           status: status
         });
         
-        // Exponential slowdown starts early
-        if (i > 5) {
+        // Exponential slowdown like CS:GO
+        if (i > 4) {
           currentDelay *= slowdownRate;
         }
       }
 
-      // THIRD: REAL carousel rotation - items change every frame
+      // THIRD: CS:GO authentic carousel - random blur then converge to winner
       const animationPromise = (async () => {
         for (let i = 0; i < animationFrames.length; i++) {
           const frame = animationFrames[i];
           await new Promise(resolve => setTimeout(resolve, frame.delay));
           
-          // Generate NEW random window for each frame to simulate spinning carousel
-          // As we approach the end, start showing the actual carousel with winner
-          const isNearEnd = i > totalFrames - 8;
+          // Last 6 frames: show actual carousel converging to winner at position 5
+          const isNearEnd = i > totalFrames - 7;
           
           let window;
           if (isNearEnd) {
-            // Last frames: show actual carousel converging to winner
-            const progressToWinner = (i - (totalFrames - 8)) / 7;
-            const centerPos = Math.floor(5 + (progressToWinner * 6)); // Converge to position 11
-            const windowStart = Math.max(0, centerPos - 3);
+            // Final frames: converge smoothly to winner
+            const framesFromEnd = totalFrames - i;
+            const offset = Math.max(0, framesFromEnd - 3); // Scroll from offset to winner
+            const centerPos = 5 + offset;
+            const windowStart = Math.max(0, Math.min(centerPos - 3, carousel.length - 7));
             window = carousel.slice(windowStart, windowStart + 7);
           } else {
-            // Early/mid frames: completely random items flying by
+            // Early frames: random items flying by for blur effect
             window = [];
             for (let j = 0; j < 7; j++) {
               const randomItem = possibleItems[Math.floor(Math.random() * possibleItems.length)];
@@ -206,13 +206,13 @@ export default {
             }
           }
           
-          // Pad if needed
+          // Ensure window is always 7 items
           while (window.length < 7) {
             const randomItem = possibleItems[Math.floor(Math.random() * possibleItems.length)];
             window.push(randomItem.itemDef);
           }
 
-          // Get rarity emoji for each item in window
+          // Get rarity emoji for each item
           const rarityEmojis: { [key: string]: string } = {
             COMMON: '⚪',
             UNCOMMON: '🔵',
@@ -222,10 +222,10 @@ export default {
             EXOTIC: '⭐'
           };
 
-          const centerIndex = 3;
+          const centerIndex = 3; // Center of 7-slot window
           const centerItem = window[centerIndex];
           
-          // Display with center highlighted
+          // Display with center item highlighted
           const displayText = window.map((item, idx) => {
             if (idx === centerIndex) {
               return `**[${rarityEmojis[item.rarity]}]**`;
@@ -233,7 +233,7 @@ export default {
             return rarityEmojis[item.rarity];
           }).join('');
 
-          // Dynamic color
+          // Color matches center item rarity
           const embedColor = RARITY_CONFIG[centerItem.rarity as keyof typeof RARITY_CONFIG]?.color || 0x5865F2;
 
           const spinEmbed = new EmbedBuilder()
@@ -301,8 +301,8 @@ export default {
 
       await interaction.editReply({ embeds: [revealingEmbed] });
       
-      // Dramatic pause before final reveal
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      // Quick pause like CS:GO (800ms instead of 1200ms)
+      await new Promise(resolve => setTimeout(resolve, 800));
       
       // Special messages for rare items
       let specialMessage = '';

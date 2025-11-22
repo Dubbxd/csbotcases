@@ -34,12 +34,22 @@ const rest = new REST().setToken(env.DISCORD_TOKEN);
   try {
     logger.info(`Started refreshing ${commands.length} application (/) commands.`);
 
-    const data: any = await rest.put(
-      Routes.applicationCommands(env.DISCORD_CLIENT_ID),
-      { body: commands }
-    );
-
-    logger.info(`Successfully reloaded ${data.length} application (/) commands.`);
+    // Deploy as guild commands for instant updates (recommended during development)
+    // For production with multiple servers, use applicationCommands instead
+    if (env.DISCORD_GUILD_ID) {
+      const data: any = await rest.put(
+        Routes.applicationGuildCommands(env.DISCORD_CLIENT_ID, env.DISCORD_GUILD_ID),
+        { body: commands }
+      );
+      logger.info(`Successfully reloaded ${data.length} guild commands for server ${env.DISCORD_GUILD_ID}.`);
+    } else {
+      // Fallback to global commands if no guild ID specified
+      const data: any = await rest.put(
+        Routes.applicationCommands(env.DISCORD_CLIENT_ID),
+        { body: commands }
+      );
+      logger.info(`Successfully reloaded ${data.length} global application commands.`);
+    }
   } catch (error) {
     logger.error('Error deploying commands:', error);
   }

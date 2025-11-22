@@ -148,23 +148,23 @@ export default {
 
       const carousel = createCarousel();
       
-      // CS:GO authentic timing: ~5.5 seconds total
-      // Fast start, smooth exponential deceleration, dramatic finish
-      const totalFrames = 35; // Optimized for CS:GO timing
+      // Faster case opening: ~3 seconds total
+      // Quick and exciting reveal
+      const totalFrames = 25; // Reduced for faster opening
       const animationFrames = [];
-      let currentDelay = 70;  // Start fast like CS:GO
-      const slowdownRate = 1.15; // CS:GO-like deceleration curve
+      let currentDelay = 60;  // Start very fast
+      const slowdownRate = 1.18; // Steeper deceleration for quicker finish
       
       for (let i = 0; i < totalFrames; i++) {
         let status = '🔄 **Spinning...**';
         
-        if (i > 28) {
+        if (i > 20) {
           status = '🔮 **Revealing...**';
-        } else if (i > 22) {
+        } else if (i > 16) {
           status = '⏳ **Almost there...**';
-        } else if (i > 15) {
+        } else if (i > 11) {
           status = '🎲 **Slowing down...**';
-        } else if (i > 8) {
+        } else if (i > 6) {
           status = '🎰 **Rolling...**';
         }
         
@@ -180,14 +180,14 @@ export default {
         }
       }
 
-      // THIRD: CS:GO authentic carousel - random blur then converge to winner
+      // THIRD: Fast carousel - random blur then quick converge to winner
       const animationPromise = (async () => {
         for (let i = 0; i < animationFrames.length; i++) {
           const frame = animationFrames[i];
           await new Promise(resolve => setTimeout(resolve, frame.delay));
           
-          // Last 6 frames: show actual carousel converging to winner at position 5
-          const isNearEnd = i > totalFrames - 7;
+          // Last 5 frames: show actual carousel converging to winner at position 5
+          const isNearEnd = i > totalFrames - 6;
           
           let window;
           if (isNearEnd) {
@@ -301,8 +301,8 @@ export default {
 
       await interaction.editReply({ embeds: [revealingEmbed] });
       
-      // Quick pause like CS:GO (800ms instead of 1200ms)
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Quick pause (500ms for fast reveal)
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Special messages for rare items
       let specialMessage = '';

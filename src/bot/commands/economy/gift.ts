@@ -18,12 +18,18 @@ export default {
         .setMinValue(1)
         .setMaxValue(10000)
         .setRequired(true)
-    ),
+    )
+    .setDMPermission(false),
 
   async execute(interaction: ChatInputCommandInteraction) {
+    if (!interaction.guild) {
+      await interaction.reply({ content: 'This command can only be used in a server', ephemeral: true });
+      return;
+    }
+
     const targetUser = interaction.options.getUser('user', true);
     const amount = interaction.options.getInteger('amount', true);
-    const guildId = interaction.guildId!;
+    const guildId = interaction.guild.id;
 
     if (targetUser.id === interaction.user.id) {
       return interaction.reply({

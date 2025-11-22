@@ -6,7 +6,8 @@ import { cooldownManager } from '../../middleware/cooldownManager';
 export default {
   data: new SlashCommandBuilder()
     .setName('daily')
-    .setDescription('Claim your daily reward'),
+    .setDescription('Claim your daily reward')
+    .setDMPermission(false),
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
       await interaction.reply({ content: 'This command can only be used in a server', ephemeral: true });

@@ -27,7 +27,8 @@ export default {
         .setDescription('Which key to use')
         .setRequired(true)
         .addChoices({ name: '🔑 Universal Key', value: 1 })
-    ),
+    )
+    .setDMPermission(false),
   cooldown: 5,
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {

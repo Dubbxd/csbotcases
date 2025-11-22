@@ -65,7 +65,8 @@ export default {
           .setDescription('The ID of the listing to cancel')
           .setRequired(true)
       )
-    ),
+    )
+    .setDMPermission(false),
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
       await interaction.reply({

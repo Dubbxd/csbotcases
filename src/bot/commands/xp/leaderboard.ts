@@ -5,7 +5,8 @@ import { EmbedHelper } from '../../utils/embeds';
 export default {
   data: new SlashCommandBuilder()
     .setName('leaderboard')
-    .setDescription('View the server leaderboard'),
+    .setDescription('View the server leaderboard')
+    .setDMPermission(false),
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
       await interaction.reply({ content: 'This command can only be used in a server', ephemeral: true });

@@ -33,7 +33,8 @@ export default {
           { name: 'Legendary', value: 'LEGENDARY' },
           { name: 'Exotic', value: 'EXOTIC' }
         )
-    ),
+    )
+    .setDMPermission(false),
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
       await interaction.reply({ content: 'This command can only be used in a server', ephemeral: true });

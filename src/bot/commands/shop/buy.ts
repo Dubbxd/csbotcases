@@ -23,15 +23,21 @@ export default {
         .setDescription('How many to buy')
         .setMinValue(1)
         .setMaxValue(10)
-    ),
+    )
+    .setDMPermission(false),
 
   async execute(interaction: ChatInputCommandInteraction) {
+    if (!interaction.guild) {
+      await interaction.reply({ content: 'This command can only be used in a server', ephemeral: true });
+      return;
+    }
+
     await interaction.deferReply();
 
     const itemChoice = interaction.options.getString('item', true);
     const amount = interaction.options.getInteger('amount') || 1;
     const userId = interaction.user.id;
-    const guildId = interaction.guildId!;
+    const guildId = interaction.guild.id;
 
     try {
       // Parse item choice

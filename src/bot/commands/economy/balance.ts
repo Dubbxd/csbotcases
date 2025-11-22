@@ -11,7 +11,8 @@ export default {
         .setName('user')
         .setDescription('The user to check')
         .setRequired(false)
-    ),
+    )
+    .setDMPermission(false),
   async execute(interaction: ChatInputCommandInteraction) {
     const targetUser = interaction.options.getUser('user') || interaction.user;
 

@@ -4,7 +4,8 @@ import prisma from '../../../db/client';
 export default {
   data: new SlashCommandBuilder()
     .setName('shop')
-    .setDescription('🛒 Browse the CS:GO cases and keys shop'),
+    .setDescription('🛒 Browse the CS:GO cases and keys shop')
+    .setDMPermission(false),
 
   async execute(interaction: ChatInputCommandInteraction) {
     const items = await prisma.shopItem.findMany({

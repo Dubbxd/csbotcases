@@ -4,11 +4,17 @@ import prisma from '../../../db/client';
 export default {
   data: new SlashCommandBuilder()
     .setName('start')
-    .setDescription('🎁 Get your starter pack! (One-time only)'),
+    .setDescription('🎁 Get your starter pack! (One-time only)')
+    .setDMPermission(false),
 
   async execute(interaction: ChatInputCommandInteraction) {
+    if (!interaction.guild) {
+      await interaction.reply({ content: 'This command can only be used in a server', ephemeral: true });
+      return;
+    }
+
     const userId = interaction.user.id;
-    const guildId = interaction.guildId!;
+    const guildId = interaction.guild.id;
 
     await interaction.deferReply();
 

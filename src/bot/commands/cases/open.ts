@@ -148,34 +148,48 @@ export default {
 
       const carousel = createCarousel();
       
-      // CS:GO-style animation with smooth deceleration
-      const animationFrames = [
-        // Fast start (100ms each)
-        { delay: 100, position: 0, status: '🔄 **Spinning...**' },
-        { delay: 100, position: 1, status: '🔄 **Spinning...**' },
-        { delay: 100, position: 2, status: '🔄 **Spinning...**' },
-        // Medium speed (150ms each)
-        { delay: 150, position: 3, status: '🎰 **Rolling...**' },
-        { delay: 150, position: 4, status: '🎰 **Rolling...**' },
-        // Slowing down (200-300ms)
-        { delay: 200, position: 5, status: '🎲 **Slowing down...**' },
-        { delay: 250, position: 6, status: '🎲 **Slowing down...**' },
-        { delay: 300, position: 7, status: '⏳ **Almost there...**' },
-        // Final crawl (400-600ms)
-        { delay: 400, position: 8, status: '🔮 **Revealing...**' },
-        { delay: 500, position: 9, status: '🔮 **Revealing...**' },
-        { delay: 600, position: 10, status: '🔮 **Revealing...**' },
-      ];
+      // Ultra-smooth CS:GO carousel animation with realistic deceleration
+      // Start ultra-fast, gradually slow down frame by frame
+      const animationFrames = [];
+      let currentDelay = 50;  // Start at 50ms (ultra fast)
+      const totalFrames = 60;
+      const slowdownRate = 1.08; // Exponential slowdown multiplier
+      
+      for (let i = 0; i < totalFrames; i++) {
+        let status = '🔄 **Spinning...**';
+        
+        if (i > 45) {
+          status = '🔮 **Revealing...**';
+        } else if (i > 35) {
+          status = '⏳ **Almost there...**';
+        } else if (i > 25) {
+          status = '🎲 **Slowing down...**';
+        } else if (i > 15) {
+          status = '🎰 **Rolling...**';
+        }
+        
+        animationFrames.push({
+          delay: Math.round(currentDelay),
+          position: i,
+          status: status
+        });
+        
+        // Exponential slowdown
+        if (i > 10) {
+          currentDelay *= slowdownRate;
+        }
+      }
 
-      // THIRD: CS:GO-style carousel animation
+      // THIRD: Ultra-smooth carousel animation (60 FPS style)
       const animationPromise = (async () => {
         for (let i = 0; i < animationFrames.length; i++) {
           const frame = animationFrames[i];
           await new Promise(resolve => setTimeout(resolve, frame.delay));
           
-          // Create a 7-slot window (3 before, 1 center, 3 after)
-          // IMPORTANT: Use frame.position + 5 to get the correct center item (winner is at position 5 in carousel)
-          const centerPos = Math.min(frame.position + 5, carousel.length - 4);
+          // Calculate position in carousel - each frame advances through the carousel
+          // Winner is at position 5, so we need to scroll through carousel to reach it
+          const scrollPosition = Math.floor((frame.position / totalFrames) * 11);
+          const centerPos = Math.min(scrollPosition + 5, carousel.length - 4);
           const windowStart = Math.max(0, centerPos - 3);
           const window = carousel.slice(windowStart, windowStart + 7);
           
@@ -198,7 +212,7 @@ export default {
           const centerIndex = 3; // Middle of 7-slot window
           const centerItem = window[centerIndex];
           
-          // Simple clean display with center highlighted
+          // Display with center highlighted
           const displayText = window.map((item, idx) => {
             if (idx === centerIndex) {
               return `**[${rarityEmojis[item.rarity]}]**`;

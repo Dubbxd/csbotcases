@@ -148,23 +148,23 @@ export default {
 
       const carousel = createCarousel();
       
-      // Ultra-smooth CS:GO carousel animation with realistic deceleration
-      // Start ultra-fast, gradually slow down frame by frame
+      // Ultra-smooth CS:GO carousel with constant item rotation
+      // Generate more items than needed and rotate through them rapidly
+      const totalFrames = 40; // Reduced for faster Discord updates
       const animationFrames = [];
-      let currentDelay = 50;  // Start at 50ms (ultra fast)
-      const totalFrames = 60;
-      const slowdownRate = 1.08; // Exponential slowdown multiplier
+      let currentDelay = 80;  // Start at 80ms for rapid updates
+      const slowdownRate = 1.12; // Faster exponential growth
       
       for (let i = 0; i < totalFrames; i++) {
         let status = '🔄 **Spinning...**';
         
-        if (i > 45) {
+        if (i > 32) {
           status = '🔮 **Revealing...**';
-        } else if (i > 35) {
-          status = '⏳ **Almost there...**';
         } else if (i > 25) {
+          status = '⏳ **Almost there...**';
+        } else if (i > 18) {
           status = '🎲 **Slowing down...**';
-        } else if (i > 15) {
+        } else if (i > 10) {
           status = '🎰 **Rolling...**';
         }
         
@@ -174,24 +174,37 @@ export default {
           status: status
         });
         
-        // Exponential slowdown
-        if (i > 10) {
+        // Exponential slowdown starts early
+        if (i > 5) {
           currentDelay *= slowdownRate;
         }
       }
 
-      // THIRD: Ultra-smooth carousel animation (60 FPS style)
+      // THIRD: REAL carousel rotation - items change every frame
       const animationPromise = (async () => {
         for (let i = 0; i < animationFrames.length; i++) {
           const frame = animationFrames[i];
           await new Promise(resolve => setTimeout(resolve, frame.delay));
           
-          // Calculate position in carousel - each frame advances through the carousel
-          // Winner is at position 5, so we need to scroll through carousel to reach it
-          const scrollPosition = Math.floor((frame.position / totalFrames) * 11);
-          const centerPos = Math.min(scrollPosition + 5, carousel.length - 4);
-          const windowStart = Math.max(0, centerPos - 3);
-          const window = carousel.slice(windowStart, windowStart + 7);
+          // Generate NEW random window for each frame to simulate spinning carousel
+          // As we approach the end, start showing the actual carousel with winner
+          const isNearEnd = i > totalFrames - 8;
+          
+          let window;
+          if (isNearEnd) {
+            // Last frames: show actual carousel converging to winner
+            const progressToWinner = (i - (totalFrames - 8)) / 7;
+            const centerPos = Math.floor(5 + (progressToWinner * 6)); // Converge to position 11
+            const windowStart = Math.max(0, centerPos - 3);
+            window = carousel.slice(windowStart, windowStart + 7);
+          } else {
+            // Early/mid frames: completely random items flying by
+            window = [];
+            for (let j = 0; j < 7; j++) {
+              const randomItem = possibleItems[Math.floor(Math.random() * possibleItems.length)];
+              window.push(randomItem.itemDef);
+            }
+          }
           
           // Pad if needed
           while (window.length < 7) {
@@ -209,7 +222,7 @@ export default {
             EXOTIC: '⭐'
           };
 
-          const centerIndex = 3; // Middle of 7-slot window
+          const centerIndex = 3;
           const centerItem = window[centerIndex];
           
           // Display with center highlighted
@@ -220,7 +233,7 @@ export default {
             return rarityEmojis[item.rarity];
           }).join('');
 
-          // Dynamic color based on what's in center
+          // Dynamic color
           const embedColor = RARITY_CONFIG[centerItem.rarity as keyof typeof RARITY_CONFIG]?.color || 0x5865F2;
 
           const spinEmbed = new EmbedBuilder()

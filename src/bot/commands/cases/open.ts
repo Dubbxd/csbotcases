@@ -148,42 +148,39 @@ export default {
 
       const carousel = createCarousel();
       
-      // CS:GO-style animation with realistic deceleration curve
-      // Ultra-fast start, smooth deceleration, dramatic crawl to winner
+      // CS:GO-style animation with smooth deceleration
       const animationFrames = [
-        // Lightning fast start (60ms each) - BLUR EFFECT
-        { delay: 60, position: 0, status: '💨 **SPINNING...**' },
-        { delay: 60, position: 1, status: '💨 **SPINNING...**' },
-        { delay: 80, position: 2, status: '💨 **SPINNING FAST...**' },
-        { delay: 90, position: 3, status: '💨 **SPINNING FAST...**' },
-        // Medium speed (120-180ms) - visible items
-        { delay: 120, position: 4, status: '🎰 **Rolling...**' },
-        { delay: 150, position: 5, status: '🎰 **Rolling...**' },
-        { delay: 180, position: 6, status: '🎲 **Slowing down...**' },
-        // Slowing down (220-300ms) - building tension
-        { delay: 220, position: 7, status: '⏳ **Almost there...**' },
-        { delay: 260, position: 8, status: '⏳ **Almost there...**' },
-        { delay: 300, position: 9, status: '✨ **So close...**' },
-        // Final crawl (400-800ms) - MAXIMUM TENSION
-        { delay: 400, position: 10, status: '🔮 **Revealing...**' },
-        { delay: 500, position: 11, status: '🔮 **Revealing...**' },
-        { delay: 650, position: 12, status: '🎊 **HERE IT COMES...**' },
-        { delay: 750, position: 13, status: '🎊 **HERE IT COMES...**' },
-        { delay: 900, position: 14, status: '🌟 **REVEALED!**' },
+        // Fast start (100ms each)
+        { delay: 100, position: 0, status: '🔄 **Spinning...**' },
+        { delay: 100, position: 1, status: '🔄 **Spinning...**' },
+        { delay: 100, position: 2, status: '🔄 **Spinning...**' },
+        // Medium speed (150ms each)
+        { delay: 150, position: 3, status: '🎰 **Rolling...**' },
+        { delay: 150, position: 4, status: '🎰 **Rolling...**' },
+        // Slowing down (200-300ms)
+        { delay: 200, position: 5, status: '🎲 **Slowing down...**' },
+        { delay: 250, position: 6, status: '🎲 **Slowing down...**' },
+        { delay: 300, position: 7, status: '⏳ **Almost there...**' },
+        // Final crawl (400-600ms)
+        { delay: 400, position: 8, status: '🔮 **Revealing...**' },
+        { delay: 500, position: 9, status: '🔮 **Revealing...**' },
+        { delay: 600, position: 10, status: '🔮 **Revealing...**' },
       ];
 
-      // THIRD: Enhanced CS:GO-style carousel animation with visual effects
+      // THIRD: CS:GO-style carousel animation
       const animationPromise = (async () => {
         for (let i = 0; i < animationFrames.length; i++) {
           const frame = animationFrames[i];
           await new Promise(resolve => setTimeout(resolve, frame.delay));
           
-          // Create a 9-slot window for better visual effect (4 before, 1 center, 4 after)
-          const windowStart = Math.max(0, frame.position - 4);
-          const window = carousel.slice(windowStart, windowStart + 9);
+          // Create a 7-slot window (3 before, 1 center, 3 after)
+          // IMPORTANT: Use frame.position + 5 to get the correct center item (winner is at position 5 in carousel)
+          const centerPos = Math.min(frame.position + 5, carousel.length - 4);
+          const windowStart = Math.max(0, centerPos - 3);
+          const window = carousel.slice(windowStart, windowStart + 7);
           
           // Pad if needed
-          while (window.length < 9) {
+          while (window.length < 7) {
             const randomItem = possibleItems[Math.floor(Math.random() * possibleItems.length)];
             window.push(randomItem.itemDef);
           }
@@ -198,60 +195,25 @@ export default {
             EXOTIC: '⭐'
           };
 
-          const centerIndex = 4; // Middle of 9-slot window
+          const centerIndex = 3; // Middle of 7-slot window
           const centerItem = window[centerIndex];
           
-          // Create visual effect based on speed
-          let displayText = '';
-          const isBlurred = i < 4; // First 4 frames are blurred
-          const isPulsing = i >= animationFrames.length - 5; // Last 5 frames pulse
-          
-          if (isBlurred) {
-            // Blur effect: show items smaller and closer together
-            displayText = window.map((item, idx) => {
-              if (idx === centerIndex) {
-                return `**〔${rarityEmojis[item.rarity]}〕**`;
-              }
-              return rarityEmojis[item.rarity];
-            }).join('');
-          } else if (isPulsing) {
-            // Pulsing effect: larger spacing, glowing center
-            displayText = window.map((item, idx) => {
-              if (idx === centerIndex) {
-                return ` ✨**【${rarityEmojis[item.rarity]}】**✨ `;
-              } else if (Math.abs(idx - centerIndex) === 1) {
-                return ` ${rarityEmojis[item.rarity]} `;
-              }
-              return rarityEmojis[item.rarity];
-            }).join('');
-          } else {
-            // Normal speed: clear view with highlight
-            displayText = window.map((item, idx) => {
-              if (idx === centerIndex) {
-                return ` **[${rarityEmojis[item.rarity]}]** `;
-              }
-              return rarityEmojis[item.rarity];
-            }).join(' ');
-          }
+          // Simple clean display with center highlighted
+          const displayText = window.map((item, idx) => {
+            if (idx === centerIndex) {
+              return `**[${rarityEmojis[item.rarity]}]**`;
+            }
+            return rarityEmojis[item.rarity];
+          }).join('');
 
           // Dynamic color based on what's in center
-          let embedColor = RARITY_CONFIG[centerItem.rarity as keyof typeof RARITY_CONFIG]?.color || 0x5865F2;
-          
-          // Add extra flair for rare items
-          let footerText = '🎲 Spinning through possibilities...';
-          if (isPulsing && centerItem.rarity === 'EXOTIC') {
-            footerText = '🌟✨ SOMETHING SPECIAL IS COMING... ✨🌟';
-          } else if (isPulsing && centerItem.rarity === 'LEGENDARY') {
-            footerText = '🔥 RARE DROP INCOMING! 🔥';
-          } else if (isPulsing) {
-            footerText = '💎 Almost revealed...';
-          }
+          const embedColor = RARITY_CONFIG[centerItem.rarity as keyof typeof RARITY_CONFIG]?.color || 0x5865F2;
 
           const spinEmbed = new EmbedBuilder()
             .setTitle(`${caseEmoji} ${caseDefinition.name}`)
-            .setDescription(`${frame.status}\n\n${displayText}\n\n${isPulsing ? '⬇️  ⬇️  ⬇️' : '↓'}`)
+            .setDescription(`${frame.status}\n\n${displayText}\n\n↓`)
             .setColor(embedColor)
-            .setFooter({ text: footerText });
+            .setFooter({ text: '🎲 Spinning through possibilities...' });
 
           await interaction.editReply({ embeds: [spinEmbed] });
         }
@@ -285,7 +247,7 @@ export default {
       // Wait for both animation and Steam data fetching to complete
       await Promise.all([animationPromise, steamDataPromise]);
 
-      // Final slow-motion reveal with multiple tension-building stages
+      // Simple final reveal
       const rarityEmojis: { [key: string]: string } = {
         COMMON: '⚪',
         UNCOMMON: '🔵',
@@ -295,52 +257,42 @@ export default {
         EXOTIC: '⭐'
       };
 
-      // Stage 1: Lock in position (600ms)
-      const finalWindow = carousel.slice(2, 11);
-      const lockDisplay = finalWindow.map((item, idx) => {
-        if (idx === 4) {
-          return ` 🔒**[${rarityEmojis[item.rarity]}]**🔒 `;
+      // Show the winning item centered
+      const finalWindow = carousel.slice(2, 9); // Winner is at position 5 = index 3 in this slice
+      const finalDisplay = finalWindow.map((item, idx) => {
+        if (idx === 3) {
+          return `**[${rarityEmojis[item.rarity]}]**`;
         }
         return rarityEmojis[item.rarity];
-      }).join(' ');
+      }).join('');
 
-      const lockEmbed = new EmbedBuilder()
+      const revealingEmbed = new EmbedBuilder()
         .setTitle(`${caseEmoji} ${caseDefinition.name}`)
-        .setDescription(`🎯 **LOCKED IN!**\n\n${lockDisplay}\n\n⬇️  ⬇️  ⬇️`)
+        .setDescription(`✨ **You unboxed...**\n\n${finalDisplay}\n\n↓`)
         .setColor(RARITY_CONFIG[result.item.rarity as keyof typeof RARITY_CONFIG].color)
-        .setFooter({ text: '🎊 Checking your drop...' });
+        .setFooter({ text: '🎊 Opening complete!' });
 
-      await interaction.editReply({ embeds: [lockEmbed] });
-      await new Promise(resolve => setTimeout(resolve, 600));
-
-      // Stage 2: Building suspense (700ms)
-      const suspenseDisplay = ` ✨✨ **【${rarityEmojis[result.item.rarity]}】** ✨✨ `;
+      await interaction.editReply({ embeds: [revealingEmbed] });
       
-      const suspenseEmbed = new EmbedBuilder()
-        .setTitle(`${caseEmoji} ${caseDefinition.name}`)
-        .setDescription(`🌟 **Revealing your drop...**\n\n${suspenseDisplay}\n\n━━━━━━━━━━━━━━━`)
-        .setColor(RARITY_CONFIG[result.item.rarity as keyof typeof RARITY_CONFIG].color)
-        .setFooter({ text: result.item.rarity === 'EXOTIC' ? '🌟 EXTRAORDINARY LUCK! 🌟' : result.item.rarity === 'LEGENDARY' ? '🔥 INCREDIBLE DROP! 🔥' : '💎 Here it comes...' });
-
-      await interaction.editReply({ embeds: [suspenseEmbed] });
-      await new Promise(resolve => setTimeout(resolve, 700));
+      // Dramatic pause before final reveal
+      await new Promise(resolve => setTimeout(resolve, 1200));
       
-      // Special messages for rare items with MAXIMUM HYPE
+      // Special messages for rare items
       let specialMessage = '';
       if (result.item.rarity === 'EXOTIC') {
-        specialMessage = '\n\n🌟✨⭐ **EXCEEDINGLY RARE!** ⭐✨🌟\n*JACKPOT! Only 0.1% chance!*\n━━━━━━━━━━━━━━━━━';
+        specialMessage = '\n\n⭐ **EXCEEDINGLY RARE!** ⭐\n*Only 0.1% chance!*';
       } else if (result.item.rarity === 'LEGENDARY') {
-        specialMessage = '\n\n🔥💥🔴 **COVERT DROP!** 🔴💥🔥\n*LEGENDARY! Only 1% chance!*\n━━━━━━━━━━━━━━━━━';
+        specialMessage = '\n\n🔴 **COVERT DROP!** 🔴\n*Only 1% chance!*';
       } else if (result.item.rarity === 'VERY_RARE') {
-        specialMessage = '\n\n💎🩷✨ **CLASSIFIED!** ✨🩷💎\n*High tier! Only 4% chance!*';
+        specialMessage = '\n\n🩷 **CLASSIFIED!** 🩷\n*Only 4% chance!*';
       } else if (result.item.rarity === 'RARE') {
-        specialMessage = '\n\n🟣 **RESTRICTED!** 🟣\n*Nice pull! 10% drop rate*';
+        specialMessage = '\n\n🟣 **RESTRICTED!** 🟣\n*10% drop rate*';
       }
       
-      // Final reveal embed with MAXIMUM EXCITEMENT
+      // Final reveal embed
       const finalEmbed = new EmbedBuilder()
-        .setTitle(`${caseEmoji} 🎉 CASE OPENED! 🎉`)
-        .setDescription(`**${interaction.user.username} unboxed:**\n\n${rarityEmojis[result.item.rarity]} ✨ **${result.item.name}** ✨${specialMessage}`)
+        .setTitle(`${caseEmoji} Case Opened!`)
+        .setDescription(`**🎉 ${interaction.user.username} unboxed:**\n\n${rarityEmojis[result.item.rarity]} **${result.item.name}**${specialMessage}`)
         .setColor(RARITY_CONFIG[result.item.rarity as keyof typeof RARITY_CONFIG].color);
       
       // Add fields
